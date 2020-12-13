@@ -797,7 +797,7 @@ std::pair<std::string, int> Win32ApiSystem::updateSystem(const std::function<voi
 			else
 			{
 				// Avoid replacing development exe/lib
-				if ((Utils::String::containsIgnoreCase(localPath, "/RelWithDebInfo/") || Utils::String::containsIgnoreCase(localPath, "/Debug/")) && 
+				if ((localPath.find("/RelWithDebInfo/") != std::string::npos || localPath.find("/Debug/") != std::string::npos) && 
 					(Utils::FileSystem::getExtension(localPath) == ".exe" || Utils::FileSystem::getExtension(localPath) == ".lib"))
 					continue;
 
