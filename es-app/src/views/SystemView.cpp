@@ -156,9 +156,24 @@ void SystemView::ensureLogo(IList<SystemViewData, SystemData*>::Entry& entry)
 	auto system = entry.object;
 	const std::shared_ptr<ThemeData>& theme = system->getTheme();
 
-	// make logo
-	const ThemeData::ThemeElement* logoElem = theme->getElement("system", "logo", "image");
-	if (logoElem && logoElem->has("path") && theme->getSystemThemeFolder() != "default")
+	// get logo from container control
+	const ThemeData::ThemeElement* logoElem = theme->getElement("system", "logo", "container");
+	if (!logoElem)
+		logoElem = theme->getElement("system", "logo", "control");
+
+	if (logoElem  && theme->getSystemThemeFolder() != "default")
+	{
+		auto logo = std::make_shared<GuiComponent>(mWindow);
+
+		logo->setScaleOrigin(0.0f);
+		logo->setSize(mCarousel.logoSize * mCarousel.logoScale);
+		logo->applyTheme(theme, "system", "logo", ThemeFlags::ALL ^ ThemeFlags::SIZE);
+		entry.data.logo = logo;
+	}
+
+	// get logo from image
+	logoElem = theme->getElement("system", "logo", "image");
+	if (!entry.data.logo && logoElem && logoElem->has("path") && theme->getSystemThemeFolder() != "default")
 	{
 		std::string path = logoElem->get<std::string>("path");
 		if (path.empty())
@@ -167,7 +182,7 @@ void SystemView::ensureLogo(IList<SystemViewData, SystemData*>::Entry& entry)
 		if (!path.empty())
 		{
 			// Remove dynamic flags for png & jpg files : themes can contain oversized images that can't be unloaded by the TextureResource manager
-			auto logo = std::make_shared<ImageComponent>(mWindow, false, false); // Utils::String::toLower(Utils::FileSystem::getExtension(path)) != ".svg");
+			auto logo = std::make_shared<ImageComponent>(mWindow); // , false, false // Utils::String::toLower(Utils::FileSystem::getExtension(path)) != ".svg");
 			logo->setMaxSize(mCarousel.logoSize * mCarousel.logoScale);
 			logo->applyTheme(theme, "system", "logo", ThemeFlags::COLOR | ThemeFlags::ALIGNMENT | ThemeFlags::VISIBLE); //  ThemeFlags::PATH | 
 																														// Process here to be enable to set max picture size
@@ -248,8 +263,7 @@ void SystemView::ensureLogo(IList<SystemViewData, SystemData*>::Entry& entry)
 		entry.data.logo->storyBoardExists("scroll", "opacity") ||
 		entry.data.logo->storyBoardExists("", "opacity");
 
-	if (!entry.data.logo->selectStoryboard("deactivate") && !entry.data.logo->selectStoryboard())
-		entry.data.logo->deselectStoryboard();
+	entry.data.logo->selectAndRunAnyStoryboard({ "deactivate", "" });
 }
 
 void SystemView::populate()
@@ -1285,11 +1299,25 @@ void SystemView::preloadExtraNeighbours(int cursor)
 		if (index < 0)
 			index += (int)mEntries.size();
 
+		if (mEntries.at(index).data.logo)
+		{
+			ImageComponent* logo = dynamic_cast<ImageComponent*>(mEntries.at(index).data.logo.get());
+			if (logo != nullptr)
+			{
+				if (dx > 1)
+					setTexture(logo, [](std::shared_ptr<TextureResource> x) { x->reload(); });
+				else
+					setTexture(logo, [](std::shared_ptr<TextureResource> x) { x->prioritize(); });
+			}
+		}
+
 		for (GuiComponent* extra : mEntries.at(index).data.backgroundExtras)
+		{
 			if (dx > 1)
 				setTexture(extra, [](std::shared_ptr<TextureResource> x) { x->reload(); });
 			else
 				setTexture(extra, [](std::shared_ptr<TextureResource> x) { x->prioritize(); });
+		}
 	}
 }
 
@@ -1675,20 +1703,7 @@ void SystemView::onShow()
 	{
 		auto logo = mEntries.at(mCursor).data.logo;
 		if (logo)
-		{
-			if (logo->selectStoryboard("activate"))
-			{
-				logo->startStoryboard();
-				cursorStoryboardSet = true;
-			}
-			else if (logo->selectStoryboard())
-			{
-				logo->startStoryboard();
-				cursorStoryboardSet = true;
-			}
-			else 
-				logo->deselectStoryboard();
-		}
+			logo->selectAndRunAnyStoryboard({ "activate", "" });
 	}
 
 	for (int i = 0 ; i < mEntries.size() ; i++)
@@ -1697,8 +1712,18 @@ void SystemView::onShow()
 			continue;
 
 		auto logo = mEntries.at(i).data.logo;
-		if (logo && (logo->selectStoryboard("scroll") || logo->selectStoryboard()))
-			logo->startStoryboard();
+		if (logo)
+			logo->selectAndRunAnyStoryboard({ "scroll", "" }, false);
+	}
+
+	for (int i = 0; i < mEntries.size(); i++)
+	{
+		auto logo = mEntries.at(i).data.logo;
+		if (logo != nullptr)
+		{
+			for (int c = 0; c < logo->getChildCount(); c++)
+				logo->getChild(c)->onShow();
+		}
 	}
 
 	activateExtras(mCursor);
@@ -1714,6 +1739,16 @@ void SystemView::onHide()
 {
 	GuiComponent::onHide();	
 	updateExtras([this](GuiComponent* p) { p->onHide(); });
+
+	for (int i = 0; i < mEntries.size(); i++)
+	{
+		auto logo = mEntries.at(i).data.logo;
+		if (logo != nullptr)
+		{
+			for (int c = 0; c < logo->getChildCount(); c++)
+				logo->getChild(c)->onHide();
+		}
+	}
 
 	for (auto sb : mStaticBackgrounds)
 		sb->onHide();

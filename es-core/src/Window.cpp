@@ -415,6 +415,9 @@ void Window::update(int deltaTime)
 			deltaTime = mAverageDeltaTime;
 	}
 
+	for (auto extra : mScreenExtras)
+		extra->update(deltaTime);
+
 	if (mVolumeInfo)
 		mVolumeInfo->update(deltaTime);
 

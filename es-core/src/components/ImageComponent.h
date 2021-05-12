@@ -25,6 +25,8 @@ public:
 	ImageComponent(Window* window, bool forceLoad = false, bool dynamic = true);
 	virtual ~ImageComponent();
 
+	virtual std::string getTypeName() { return "image"; }
+
 	std::string getValue() const override { return mPath; }
 
 	void setDefaultImage(std::string path);
@@ -38,6 +40,8 @@ public:
 	void setImage(const std::shared_ptr<TextureResource>& texture);
 
 	void onSizeChanged() override;
+	void onPaddingChanged() override;
+	
 	void setOpacity(unsigned char opacity) override;
 
 	// Resize the image to fit this size. If one axis is zero, scale that axis to maintain aspect ratio.
@@ -104,9 +108,6 @@ public:
 		return MaxSizeInfo(mTargetSize, mTargetIsMax);
 	};
 
-	Vector4f getPadding() { return mPadding; }
-	void setPadding(const Vector4f padding);
-
 	void setHorizontalAlignment(Alignment align) { mHorizontalAlignment = align; }
 	void setVerticalAlignment(Alignment align) { mVerticalAlignment = align; }
 
@@ -128,6 +129,8 @@ public:
 	ThemeData::ThemeElement::Property getProperty(const std::string name) override;
 	void setProperty(const std::string name, const ThemeData::ThemeElement::Property& value) override;
 	void setTargetIsMax() { mTargetIsMax = true; }
+	
+	void setTargetSize(float w, float h) override;
 
 protected:
 	std::shared_ptr<TextureResource> mTexture;
@@ -171,8 +174,6 @@ private:
 	bool mAllowFading;
 
 	std::string mPath;
-
-	Vector4f	mPadding;
 
 	Alignment mHorizontalAlignment;
 	Alignment mVerticalAlignment;

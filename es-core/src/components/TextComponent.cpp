@@ -12,7 +12,7 @@
 TextComponent::TextComponent(Window* window) : GuiComponent(window), 
 	mFont(Font::get(FONT_SIZE_MEDIUM)), mUppercase(false), mColor(0x000000FF), mAutoCalcExtent(true, true),
 	mHorizontalAlignment(ALIGN_LEFT), mVerticalAlignment(ALIGN_CENTER), mLineSpacing(1.5f), mBgColor(0),
-	mRenderBackground(false), mGlowColor(0), mGlowSize(2), mPadding(Vector4f(0, 0, 0, 0)), mGlowOffset(Vector2f(0,0)),
+	mRenderBackground(false), mGlowColor(0), mGlowSize(2), mGlowOffset(Vector2f(0,0)),
 	mReflection(0.0f, 0.0f), mReflectOnBorders(false), mAutoScroll(AutoScrollType::NONE)
 {	
 	mMarqueeOffset = 0;
@@ -24,7 +24,7 @@ TextComponent::TextComponent(Window* window, const std::string& text, const std:
 	Vector3f pos, Vector2f size, unsigned int bgcolor) : GuiComponent(window), 
 	mFont(NULL), mUppercase(false), mColor(0x000000FF), mAutoCalcExtent(true, true),
 	mHorizontalAlignment(align), mVerticalAlignment(ALIGN_CENTER), mLineSpacing(1.5f), mBgColor(0),
-	mRenderBackground(false), mGlowColor(0), mGlowSize(2), mPadding(Vector4f(0, 0, 0, 0)), mGlowOffset(Vector2f(0, 0)),
+	mRenderBackground(false), mGlowColor(0), mGlowSize(2), mGlowOffset(Vector2f(0, 0)),
 	mReflection(0.0f, 0.0f), mReflectOnBorders(false), mAutoScroll(AutoScrollType::NONE)
 {
 	setFont(font);
@@ -172,7 +172,7 @@ void TextComponent::render(const Transform4x4f& parentTrans)
 
 	Transform4x4f trans = parentTrans * getTransform();
 	
-	if (!Renderer::isVisibleOnScreen(trans.translation().x(), trans.translation().y(), mSize.x() * trans.r0().x(), mSize.y() * trans.r1().y()))
+	if (mRotation == 0 && !Renderer::isVisibleOnScreen(trans.translation().x(), trans.translation().y(), mSize.x() * trans.r0().x(), mSize.y() * trans.r1().y()))
 		return;
 
 	if (mRenderBackground)
@@ -320,13 +320,15 @@ void TextComponent::onTextChanged()
 {
 	mTextCache = nullptr;
 
-	if (mAutoCalcExtent.x())
+	if (mAutoCalcExtent.x() && mAutoCalcExtent.y())
 	{
 		mSize = mFont->sizeText(mUppercase ? Utils::String::toUpper(mText) : mText, mLineSpacing);
 		mSize[0] += mPadding.x() + mPadding.z();
 	}
-	else if(mAutoCalcExtent.y())
-		mSize[1] = mFont->sizeWrappedText(mUppercase ? Utils::String::toUpper(mText) : mText, getSize().x(), mLineSpacing).y() + mPadding.y() + mPadding.w();
+	else if (mAutoCalcExtent.x())
+		mSize.x() = mFont->sizeText(mUppercase ? Utils::String::toUpper(mText) : mText, mLineSpacing).x() + mPadding.x() + mPadding.z();
+	else if (mAutoCalcExtent.y())
+		mSize.y() = mFont->sizeWrappedText(mUppercase ? Utils::String::toUpper(mText) : mText, getSize().x(), mLineSpacing).y() + mPadding.y() + mPadding.w();
 }
 
 void TextComponent::buildTextCache()
@@ -523,7 +525,7 @@ void TextComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const st
 
 	using namespace ThemeFlags;
 
-	const ThemeData::ThemeElement* elem = theme->getElement(view, element, "text");
+	const ThemeData::ThemeElement* elem = theme->getElement(view, element, getTypeName());
 	if(!elem)
 		return;
 
@@ -554,14 +556,6 @@ void TextComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const st
 			else
 				LOG(LogError) << "Unknown text alignment string: " << str;
 		}
-
-		if (elem->has("padding"))
-		{
-			Vector2f scale = getParent() ? getParent()->getSize() : Vector2f((float)Renderer::getScreenWidth(), (float)Renderer::getScreenHeight());
-			mPadding = elem->get<Vector4f>("padding") * Vector4f(scale.x(), scale.y(), scale.x(), scale.y());
-		}
-		else
-			mPadding = Vector4f::Zero();
 	}
 
 	if (properties & TEXT)
@@ -702,11 +696,7 @@ void TextComponent::setProperty(const std::string name, const ThemeData::ThemeEl
 		GuiComponent::setProperty(name, value);
 }
 
-void TextComponent::setPadding(const Vector4f padding) 
-{ 
-	if (mPadding == padding) 
-		return;  
-	
-	mPadding = padding; 
+void TextComponent::onPaddingChanged()
+{
 	onTextChanged();
 }

@@ -24,7 +24,7 @@ ImageComponent::ImageComponent(Window* window, bool forceLoad, bool dynamic) : G
 	mTargetIsMax(false), mTargetIsMin(false), mFlipX(false), mFlipY(false), mTargetSize(0, 0), mColorShift(0xFFFFFFFF),
 	mColorShiftEnd(0xFFFFFFFF), mColorGradientHorizontal(true), mForceLoad(forceLoad), mDynamic(dynamic),
 	mFadeOpacity(0), mFading(false), mRotateByTargetSize(false), mTopLeftCrop(0.0f, 0.0f), mBottomRightCrop(1.0f, 1.0f),
-	mReflection(0.0f, 0.0f), mPadding(Vector4f(0, 0, 0, 0))
+	mReflection(0.0f, 0.0f)
 {
 	mScaleOrigin = Vector2f::Zero();
 	mCheckClipping = true;
@@ -144,6 +144,11 @@ void ImageComponent::resize()
 	onSizeChanged();
 }
 
+void ImageComponent::onPaddingChanged()
+{
+	updateVertices();
+}
+
 void ImageComponent::onSizeChanged()
 {
 	updateVertices();
@@ -234,6 +239,16 @@ void ImageComponent::setResize(float width, float height)
 	mSize = mTargetSize;
 	mTargetIsMax = false;
 	mTargetIsMin = false;
+	resize();
+}
+
+void ImageComponent::setTargetSize(float w, float h)
+{
+	if (mSize.x() != 0 && mSize.y() != 0 && mTargetSize.x() == w && mTargetSize.y() == h)
+		return;
+
+	mTargetSize = Vector2f(w, h);
+	mSize = mTargetSize;
 	resize();
 }
 
@@ -345,15 +360,6 @@ void ImageComponent::setOpacity(unsigned char opacity)
 	updateColors();
 }
 
-void ImageComponent::setPadding(const Vector4f padding) 
-{ 
-	if (mPadding == padding)
-		return;
-
-	mPadding = padding; 
-	updateVertices(); 
-}
-
 void ImageComponent::updateVertices()
 {
 	if(!mTexture)
@@ -402,7 +408,7 @@ void ImageComponent::updateVertices()
 
 void ImageComponent::updateColors()
 {
-	float opacity = (mOpacity * (mFading ? mFadeOpacity / 255.0 : 1.0)) / 255.0;
+	float opacity = (getAmbiantOpacity() * (mFading ? mFadeOpacity / 255.0 : 1.0)) / 255.0;
 
 	const unsigned int color = Renderer::convertColor(mColorShift & 0xFFFFFF00 | (unsigned char)((mColorShift & 0xFF) * opacity));
 	const unsigned int colorEnd = Renderer::convertColor(mColorShiftEnd & 0xFFFFFF00 | (unsigned char)((mColorShiftEnd & 0xFF) * opacity));
@@ -465,6 +471,14 @@ void ImageComponent::render(const Transform4x4f& parentTrans)
 	// Don't use soft clip if rotation applied : let renderer do the work
 	if (mCheckClipping && mRotation == 0 && !Renderer::isVisibleOnScreen(trans.translation().x(), trans.translation().y(), mSize.x() * trans.r0().x(), mSize.y() * trans.r1().y()))
 		return;
+	
+//	if (getAmbiantOpacity() != mOpacity)
+//		updateColors();
+
+	// Calculate children tranform from targetSize
+	auto sz = mSize; mSize = mTargetSize;
+	Transform4x4f childTrans = parentTrans * getTransform();
+	mSize = sz;
 
 	Renderer::setMatrix(trans);
 
@@ -485,6 +499,7 @@ void ImageComponent::render(const Transform4x4f& parentTrans)
 		if (!mTexture->bind())
 		{
 			fadeIn(false);
+			GuiComponent::renderChildren(childTrans);
 			return;
 		}
 
@@ -557,14 +572,12 @@ void ImageComponent::render(const Transform4x4f& parentTrans)
 			Renderer::drawTriangleStrips(&mirrorVertices[0], 4);
 		}
 
-		GuiComponent::renderChildren(trans);
+		GuiComponent::renderChildren(childTrans);
 
 		endCustomClipRect();
 	}
 	else
-		GuiComponent::renderChildren(trans);
-
-
+		GuiComponent::renderChildren(childTrans);
 }
 
 void ImageComponent::fadeIn(bool textureLoaded)
@@ -618,7 +631,7 @@ void ImageComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const s
 {
 	using namespace ThemeFlags;
 
-	const ThemeData::ThemeElement* elem = theme->getElement(view, element, "image");
+	const ThemeData::ThemeElement* elem = theme->getElement(view, element, getTypeName());
 	if (!elem)
 		return;
 
@@ -669,6 +682,23 @@ void ImageComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const s
 
 	if (properties & SIZE && elem->has("padding"))
 		setPadding(elem->get<Vector4f>("padding"));
+
+	if (properties & POSITION && elem->has("dock"))
+	{
+		std::string dock = elem->get<std::string>("dock");
+		if (dock == "fill")
+			mDockStyle = DockStyle::Fill;
+		else if (dock == "left")
+			mDockStyle = DockStyle::Left;
+		else if (dock == "right")
+			mDockStyle = DockStyle::Right;
+		else if (dock == "top")
+			mDockStyle = DockStyle::Top;
+		else if (dock == "bottom")
+			mDockStyle = DockStyle::Bottom;
+		else
+			mDockStyle = DockStyle::None;
+	}
 
 	// position + size also implies origin
 	if ((properties & ORIGIN || (properties & POSITION && properties & ThemeFlags::SIZE)) && elem->has("origin"))
@@ -784,6 +814,7 @@ void ImageComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const s
 	}
 
 	applyStoryboard(elem);
+	loadThemedChildren(elem);
 }
 
 std::vector<HelpPrompt> ImageComponent::getHelpPrompts()

@@ -205,6 +205,8 @@ public:
 		std::string type;
 		std::map<std::string, ThemeStoryboard*> mStoryBoards;
 
+		std::vector<std::pair<std::string, ThemeElement>> children;
+
 		struct Property
 		{
 		public:
@@ -320,6 +322,8 @@ public:
 	};
 
 	static std::vector<GuiComponent*> makeExtras(const std::shared_ptr<ThemeData>& theme, const std::string& view, Window* window, bool forceLoad = false, ExtraImportType type = ExtraImportType::ALL_EXTRAS);
+	static GuiComponent* createExtraComponent(Window* window, const ThemeElement& elem, bool forceLoad = false);
+	static void applySelfTheme(GuiComponent* comp, const ThemeElement& elem);
 
 	static const std::shared_ptr<ThemeData>& getDefault();
 
@@ -357,6 +361,8 @@ public:
 
 private:
 	static std::map< std::string, std::map<std::string, ElementPropertyType> > sElementMap;
+	static std::map< std::string, std::string> sBaseClasses;
+	
 	static std::vector<std::string> sSupportedFeatures;
 	static std::vector<std::string> sSupportedViews;
 
@@ -381,8 +387,10 @@ private:
 	bool parseLanguage(const pugi::xml_node& node);
 	bool parseFilterAttributes(const pugi::xml_node& node);
 	void parseSubsetElement(const pugi::xml_node& root);
-
 	void parseCustomViewBaseClass(const pugi::xml_node& root, ThemeView& view, std::string baseClass);
+	void processElement(const pugi::xml_node& root, ThemeElement& element, const std::string& name, const std::string& value, ElementPropertyType type);
+
+	bool findPropertyFromBaseClass(const std::string& typeName, const std::string& propertyName, ElementPropertyType& type);
 
 	std::string resolveSystemVariable(const std::string& systemThemeFolder, const std::string& path);
 	std::string resolvePlaceholders(const char* in);

@@ -4,6 +4,10 @@
 #include "components/TextComponent.h"
 #include "components/NinePatchComponent.h"
 #include "components/VideoVlcComponent.h"
+#include "components/ClockComponent.h"
+#include "components/NetworkIconComponent.h"
+#include "components/BatteryIconComponent.h"
+#include "components/BatteryIndicatorComponent.h"
 #include "utils/FileSystemUtil.h"
 #include "utils/StringUtil.h"
 #include "Log.h"
@@ -16,6 +20,24 @@
 
 std::vector<std::string> ThemeData::sSupportedViews{ { "system" }, { "basic" }, { "detailed" }, { "grid" }, { "video" }, { "gamecarousel" }, { "menu" }, { "screen" }, { "splash" } };
 std::vector<std::string> ThemeData::sSupportedFeatures { { "video" }, { "carousel" }, { "gamecarousel" }, { "z-index" }, { "visible" },{ "manufacturer" } };
+
+std::map<std::string, std::string> ThemeData::sBaseClasses {
+	{ "container", "control" },
+	{ "text", "control" },
+	{ "datetime", "text" },	
+	{ "rating", "control" },
+	{ "ninepatch", "control" },
+	{ "video", "control" },	
+	{ "controllerActivity", "control" },
+	{ "batteryIndicator", "controllerActivity" },	
+	{ "image", "control" },
+	{ "textlist", "control" },
+	{ "imagegrid", "control" },
+	
+	{ "clock", "text" },
+	{ "networkIcon", "image" },
+	{ "batteryIcon", "image" }	
+};
 
 std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> ThemeData::sElementMap {
 
@@ -30,11 +52,16 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 		{ "h", FLOAT },
 		{ "w", FLOAT },
 
+		{ "origin", NORMALIZED_PAIR },
+
 		{ "scale", FLOAT },
 		{ "scaleOrigin", NORMALIZED_PAIR },
 
 		{ "rotation", FLOAT },
 		{ "rotationOrigin", NORMALIZED_PAIR },
+
+		{ "dock", STRING }, // none, fill, left, right, top, bottom
+		{ "padding", NORMALIZED_RECT },
 
 		{ "opacity", FLOAT },
 		{ "zIndex", FLOAT },
@@ -44,114 +71,27 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 		{ "offsetY", FLOAT },
 		{ "clipRect", NORMALIZED_RECT } } },
 
-	{ "image", {
-		{ "pos", NORMALIZED_PAIR },
-		{ "size", NORMALIZED_PAIR },
-		
-		{ "x", FLOAT },
-		{ "y", FLOAT },
-		{ "h", FLOAT },
-		{ "w", FLOAT },
-		{ "scale", FLOAT },
-		{ "scaleOrigin", NORMALIZED_PAIR },
-		
-		{ "padding", NORMALIZED_RECT },
+	{ "container", { } }, // Inherits control. Using "container" in themes.xml sets the type name
 
-		{ "offset", NORMALIZED_PAIR },
-		{ "offsetX", FLOAT },
-		{ "offsetY", FLOAT },
-		{ "clipRect", NORMALIZED_RECT },
-
+	{ "image",{ // Inherits control
 		{ "maxSize", NORMALIZED_PAIR },
 		{ "minSize", NORMALIZED_PAIR },
-		{ "origin", NORMALIZED_PAIR },
-	 	{ "rotation", FLOAT },
-		{ "rotationOrigin", NORMALIZED_PAIR },
 		{ "path", PATH },
 		{ "default", PATH },
 		{ "tile", BOOLEAN },
 		{ "color", COLOR },
 		{ "colorEnd", COLOR },
 		{ "gradientType", STRING },
-		{ "visible", BOOLEAN },
 		{ "reflexion", NORMALIZED_PAIR },
 		{ "reflexionOnFrame", BOOLEAN },
-		{ "horizontalAlignment", STRING },		
+		{ "horizontalAlignment", STRING },
 		{ "verticalAlignment", STRING },
 		{ "roundCorners", FLOAT },
-		{ "opacity", FLOAT },
 		{ "flipX", BOOLEAN },
 		{ "flipY", BOOLEAN },
-		{ "linearSmooth", BOOLEAN },
-		{ "zIndex", FLOAT } } },
-	{ "imagegrid", {
-		{ "pos", NORMALIZED_PAIR },
-		{ "size", NORMALIZED_PAIR },
+		{ "linearSmooth", BOOLEAN } } },
 
-		{ "x", FLOAT },
-		{ "y", FLOAT },
-		{ "h", FLOAT },
-		{ "w", FLOAT },
-		{ "scale", FLOAT },
-		{ "scaleOrigin", NORMALIZED_PAIR },
-		{ "opacity", FLOAT },
-
-		{ "margin", NORMALIZED_PAIR },
-		{ "padding", NORMALIZED_RECT },
-
-		{ "cellProportion", FLOAT },
-
-		{ "autoLayout", NORMALIZED_PAIR },
-		{ "autoLayoutSelectedZoom", FLOAT },
-		{ "animateSelection", BOOLEAN },
-		{ "imageSource", STRING }, // image, thumbnail, marquee
-		{ "zIndex", FLOAT },
-		{ "gameImage", PATH },
-		{ "folderImage", PATH },
-		{ "logoBackgroundImage", PATH },
-		{ "showVideoAtDelay", FLOAT },
-		{ "scrollDirection", STRING },
-		{ "scrollSound", PATH },
-
-		{ "scrollbarColor", COLOR },
-		{ "scrollbarSize", FLOAT },
-		{ "scrollbarCorner", FLOAT },
-		{ "scrollbarAlignment", STRING },
-
-		{ "centerSelection", STRING },
-		{ "scrollLoop", BOOLEAN } } },
-	{ "gridtile", {
-		{ "size", NORMALIZED_PAIR },
-		{ "padding", NORMALIZED_RECT },
-		{ "imageColor", COLOR },
-		{ "backgroundImage", PATH },
-		{ "backgroundCornerSize", NORMALIZED_PAIR },
-		{ "backgroundColor", COLOR },
-		{ "backgroundCenterColor", COLOR },
-		{ "backgroundEdgeColor", COLOR },
-		{ "selectionMode", STRING },
-		{ "reflexion", NORMALIZED_PAIR },
-		{ "imageSizeMode", STRING } } },
-	{ "text", {
-		{ "pos", NORMALIZED_PAIR },
-		{ "size", NORMALIZED_PAIR },
-
-		{ "offset", NORMALIZED_PAIR },
-		{ "offsetX", FLOAT },
-		{ "offsetY", FLOAT },
-		{ "clipRect", NORMALIZED_RECT },
-
-		{ "x", FLOAT },
-		{ "y", FLOAT },
-		{ "h", FLOAT },
-		{ "w", FLOAT },
-		{ "scale", FLOAT },
-		{ "scaleOrigin", NORMALIZED_PAIR },
-		{ "opacity", FLOAT },
-
-		{ "origin", NORMALIZED_PAIR },
-		{ "rotation", FLOAT },
-		{ "rotationOrigin", NORMALIZED_PAIR },
+	{ "text",{ // Inherits control
 		{ "text", STRING },
 		{ "backgroundColor", COLOR },
 		{ "fontPath", PATH },
@@ -168,25 +108,34 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 		{ "glowSize", FLOAT },
 		{ "glowOffset", NORMALIZED_PAIR },
 		{ "singleLineScroll", BOOLEAN },
-		{ "autoScroll", STRING },
-		{ "padding", NORMALIZED_RECT },
-		{ "visible", BOOLEAN },
-		{ "zIndex", FLOAT } } },
-	{ "textlist", {
-		{ "pos", NORMALIZED_PAIR },
-		{ "size", NORMALIZED_PAIR },
+		{ "autoScroll", STRING } } },
 
-		{ "x", FLOAT },
-		{ "y", FLOAT },
-		{ "h", FLOAT },
-		{ "w", FLOAT },
-		{ "scale", FLOAT },
-		{ "scaleOrigin", NORMALIZED_PAIR },
-		{ "opacity", FLOAT },
-		{ "rotation", FLOAT },
-		{ "rotationOrigin", NORMALIZED_PAIR },
+	{ "video",{ // Inherits control
+		{ "maxSize", NORMALIZED_PAIR },
+		{ "minSize", NORMALIZED_PAIR },
+		{ "default", PATH },
+		{ "path", PATH },
+		{ "delay", FLOAT },
+		{ "effect", STRING },
+		{ "roundCorners", FLOAT },
+		{ "color", COLOR },
+		{ "snapshotSource", STRING }, // image, thumbnail, marquee
+		{ "loops", FLOAT }, // Number of loops to do -1 (default) is infinite 
+		{ "audio", BOOLEAN },
+		{ "linearSmooth", BOOLEAN },
+		{ "showSnapshotNoVideo", BOOLEAN },
+		{ "showSnapshotDelay", BOOLEAN } } },
 
-		{ "origin", NORMALIZED_PAIR },
+	{ "ninepatch",{ // Inherits control		
+		{ "path", PATH },
+		{ "color", COLOR },
+		{ "cornerSize", NORMALIZED_PAIR },
+		{ "centerColor", COLOR },
+		{ "edgeColor", COLOR },
+		{ "animateColor", COLOR },
+		{ "animateColorTime", FLOAT } } },
+
+	{ "textlist",{ // Inherits control
 		{ "selectorHeight", FLOAT },
 		{ "selectorOffsetY", FLOAT },
 		{ "selectorColor", COLOR },
@@ -205,44 +154,44 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 		{ "forceUppercase", BOOLEAN },
 		{ "lineSpacing", FLOAT },
 		{ "lines", FLOAT },
-
 		{ "scrollbarColor", COLOR },
 		{ "scrollbarSize", FLOAT },
 		{ "scrollbarCorner", FLOAT },
-		{ "scrollbarAlignment", STRING },		
+		{ "scrollbarAlignment", STRING } } },
 
-		{ "zIndex", FLOAT } } },
-	{ "container", {
-		{ "pos", NORMALIZED_PAIR },
-		{ "size", NORMALIZED_PAIR },
-	 	{ "origin", NORMALIZED_PAIR },
-	 	{ "visible", BOOLEAN },
-	 	{ "zIndex", FLOAT } } },
-	{ "ninepatch", {
-		{ "pos", NORMALIZED_PAIR },
-		{ "size", NORMALIZED_PAIR },
+	{ "imagegrid", { // Inherits control			
+		{ "margin", NORMALIZED_PAIR },
+		{ "cellProportion", FLOAT },
+		{ "autoLayout", NORMALIZED_PAIR },
+		{ "autoLayoutSelectedZoom", FLOAT },
+		{ "animateSelection", BOOLEAN },
+		{ "imageSource", STRING }, // image, thumbnail, marquee
+		{ "gameImage", PATH },
+		{ "folderImage", PATH },
+		{ "logoBackgroundImage", PATH },
+		{ "showVideoAtDelay", FLOAT },
+		{ "scrollDirection", STRING },
+		{ "scrollSound", PATH },
+		{ "scrollbarColor", COLOR },
+		{ "scrollbarSize", FLOAT },
+		{ "scrollbarCorner", FLOAT },
+		{ "scrollbarAlignment", STRING },
+		{ "centerSelection", STRING },
+		{ "scrollLoop", BOOLEAN } } },
 
-		{ "x", FLOAT },
-		{ "y", FLOAT },
-		{ "h", FLOAT },
-		{ "w", FLOAT },
-		{ "scale", FLOAT },
-		{ "scaleOrigin", NORMALIZED_PAIR },
-		{ "opacity", FLOAT },
-		{ "rotation", FLOAT },
-		{ "rotationOrigin", NORMALIZED_PAIR },
-		
+	{ "gridtile", {
+		{ "size", NORMALIZED_PAIR },
 		{ "padding", NORMALIZED_RECT },
+		{ "imageColor", COLOR },
+		{ "backgroundImage", PATH },
+		{ "backgroundCornerSize", NORMALIZED_PAIR },
+		{ "backgroundColor", COLOR },
+		{ "backgroundCenterColor", COLOR },
+		{ "backgroundEdgeColor", COLOR },
+		{ "selectionMode", STRING },
+		{ "reflexion", NORMALIZED_PAIR },
+		{ "imageSizeMode", STRING } } },
 
-		{ "path", PATH },
-	 	{ "visible", BOOLEAN },
-		{ "color", COLOR },
-		{ "cornerSize", NORMALIZED_PAIR },
-		{ "centerColor", COLOR },
-		{ "edgeColor", COLOR },
-		{ "animateColor", COLOR },
-		{ "animateColorTime", FLOAT },
-		{ "zIndex", FLOAT } } },
 	{ "datetime", {
 		{ "pos", NORMALIZED_PAIR },
 		{ "size", NORMALIZED_PAIR },
@@ -270,6 +219,7 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 		{ "displayRelative", BOOLEAN },
 	 	{ "visible", BOOLEAN },
 	 	{ "zIndex", FLOAT } } },
+
 	{ "rating", {
 		{ "pos", NORMALIZED_PAIR },
 		{ "size", NORMALIZED_PAIR },
@@ -297,8 +247,10 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 		{ "horizontalAlignment", STRING },
 		{ "visible", BOOLEAN },
 		{ "zIndex", FLOAT } } },
+
 	{ "sound", {
 		{ "path", PATH } } },
+
 	{ "controllerActivity", {
 		{ "pos", NORMALIZED_PAIR },
 		{ "size", NORMALIZED_PAIR },
@@ -326,6 +278,7 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 
 		{ "visible", BOOLEAN },
 		{ "zIndex", FLOAT } } },
+
 	{ "batteryIndicator", {
 		{ "pos", NORMALIZED_PAIR },
 		{ "size", NORMALIZED_PAIR },	
@@ -353,6 +306,19 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 
 		{ "visible", BOOLEAN },
 		{ "zIndex", FLOAT } } },
+
+	{ "clock",{} }, // Inherits text
+
+	{ "networkIcon",{} }, // Inherits control
+
+	{ "batteryIcon",{ // Inherits control
+		{ "incharge", PATH },
+		{ "full", PATH },
+		{ "at75", PATH },
+		{ "at50", PATH },
+		{ "at25", PATH },
+		{ "empty", PATH } } },
+		
 	{ "helpsystem", {
 		{ "pos", NORMALIZED_PAIR },
 		{ "origin", NORMALIZED_PAIR },
@@ -371,43 +337,7 @@ std::map<std::string, std::map<std::string, ThemeData::ElementPropertyType>> The
 		{ "iconR", PATH },
 		{ "iconStart", PATH },
 		{ "iconSelect", PATH } } },
-	{ "video", {
-		// Common properties
-		{ "pos", NORMALIZED_PAIR },
-		{ "size", NORMALIZED_PAIR },
-		{ "x", FLOAT },
-		{ "y", FLOAT },
-		{ "h", FLOAT },
-		{ "w", FLOAT },
 
-		{ "offset", NORMALIZED_PAIR },
-		{ "offsetX", FLOAT },
-		{ "offsetY", FLOAT },
-		{ "clipRect", NORMALIZED_RECT },
-
-		{ "scale", FLOAT },
-		{ "scaleOrigin", NORMALIZED_PAIR },
-		{ "opacity", FLOAT },
-		{ "origin", NORMALIZED_PAIR },
-		{ "rotation", FLOAT },
-		{ "rotationOrigin", NORMALIZED_PAIR },
-		{ "visible", BOOLEAN },
-		{ "zIndex", FLOAT },
-		// video properties
-		{ "maxSize", NORMALIZED_PAIR },
-		{ "minSize", NORMALIZED_PAIR },
-		{ "default", PATH },
-		{ "path", PATH },
-		{ "delay", FLOAT },
-		{ "effect", STRING },
-		{ "roundCorners", FLOAT },
-		{ "color", COLOR },
-		{ "snapshotSource", STRING }, // image, thumbnail, marquee
-		{ "loops", FLOAT }, // Number of loops to do -1 (default) is infinite 
-		{ "audio", BOOLEAN },
-		{ "linearSmooth", BOOLEAN },
-		{ "showSnapshotNoVideo", BOOLEAN },
-		{ "showSnapshotDelay", BOOLEAN } } },
 	{ "carousel", {
 		{ "type", STRING },
 		{ "size", NORMALIZED_PAIR },
@@ -512,7 +442,6 @@ ThemeData* ThemeData::mDefaultTheme = nullptr;
 
 #define MINIMUM_THEME_FORMAT_VERSION 3
 #define CURRENT_THEME_FORMAT_VERSION 6
-
 
 std::string ThemeData::resolvePlaceholders(const char* in)
 {
@@ -998,7 +927,7 @@ bool ThemeData::parseFilterAttributes(const pugi::xml_node& node)
 		else if (verticalScreen && tinyScreenAttr == "false")
 			return false;
 	}
-
+	
 	if (node.attribute("ifHelpPrompts"))
 	{
 		const std::string helpVisibleAttr = node.attribute("ifHelpPrompts").as_string();
@@ -1009,7 +938,7 @@ bool ThemeData::parseFilterAttributes(const pugi::xml_node& node)
 		else if (help && helpVisibleAttr == "false")
 			return false;
 	}
-
+	
 	if (node.attribute("ifCheevos"))
 	{
 		const std::string hasCheevosAttr = node.attribute("ifCheevos").as_string();
@@ -1305,13 +1234,169 @@ bool ThemeData::parseLanguage(const pugi::xml_node& node)
 	return false;
 }
 
+static std::map<std::string, unsigned int> htmlColors
+{	
+	{ "aliceblue", 0xf0f8ff },
+	{ "antiquewhite", 0xfaebd7 },
+	{ "aqua", 0x00ffff },
+	{ "aquamarine", 0x7fffd4 },
+	{ "azure", 0xf0ffff },
+	{ "beige", 0xf5f5dc },
+	{ "bisque", 0xffe4c4 },
+	{ "black", 0x000000 },
+	{ "blanchedalmond", 0xffebcd },
+	{ "blue", 0x0000ff },
+	{ "blueviolet", 0x8a2be2 },
+	{ "brown", 0xa52a2a },
+	{ "burlywood", 0xdeb887 },
+	{ "cadetblue", 0x5f9ea0 },
+	{ "chartreuse", 0x7fff00 },
+	{ "chocolate", 0xd2691e },
+	{ "coral", 0xff7f50 },
+	{ "cornflowerblue", 0x6495ed },
+	{ "cornsilk", 0xfff8dc },
+	{ "crimson", 0xdc143c },
+	{ "cyan", 0x00ffff },
+	{ "darkblue", 0x00008b },
+	{ "darkcyan", 0x008b8b },
+	{ "darkgoldenrod", 0xb8860b },
+	{ "darkgray", 0xa9a9a9 },
+	{ "darkgreen", 0x006400 },
+	{ "darkgrey", 0xa9a9a9 },
+	{ "darkkhaki", 0xbdb76b },
+	{ "darkmagenta", 0x8b008b },
+	{ "darkolivegreen", 0x556b2f },
+	{ "darkorange", 0xff8c00 },
+	{ "darkorchid", 0x9932cc },
+	{ "darkred", 0x8b0000 },
+	{ "darksalmon", 0xe9967a },
+	{ "darkseagreen", 0x8fbc8f },
+	{ "darkslateblue", 0x483d8b },
+	{ "darkslategray", 0x2f4f4f },
+	{ "darkslategrey", 0x2f4f4f },
+	{ "darkturquoise", 0x00ced1 },
+	{ "darkviolet", 0x9400d3 },
+	{ "deeppink", 0xff1493 },
+	{ "deepskyblue", 0x00bfff },
+	{ "dimgray", 0x696969 },
+	{ "dimgrey", 0x696969 },
+	{ "dodgerblue", 0x1e90ff },
+	{ "firebrick", 0xb22222 },
+	{ "floralwhite", 0xfffaf0 },
+	{ "forestgreen", 0x228b22 },
+	{ "fuchsia", 0xff00ff },
+	{ "gainsboro", 0xdcdcdc },
+	{ "ghostwhite", 0xf8f8ff },
+	{ "goldenrod", 0xdaa520 },
+	{ "gold", 0xffd700 },
+	{ "gray", 0x808080 },
+	{ "green", 0x008000 },
+	{ "greenyellow", 0xadff2f },
+	{ "grey", 0x808080 },
+	{ "honeydew", 0xf0fff0 },
+	{ "hotpink", 0xff69b4 },
+	{ "indianred", 0xcd5c5c },
+	{ "indigo", 0x4b0082 },
+	{ "ivory", 0xfffff0 },
+	{ "khaki", 0xf0e68c },
+	{ "lavenderblush", 0xfff0f5 },
+	{ "lavender", 0xe6e6fa },
+	{ "lawngreen", 0x7cfc00 },
+	{ "lemonchiffon", 0xfffacd },
+	{ "lightblue", 0xadd8e6 },
+	{ "lightcoral", 0xf08080 },
+	{ "lightcyan", 0xe0ffff },
+	{ "lightgoldenrodyellow", 0xfafad2 },
+	{ "lightgray", 0xd3d3d3 },
+	{ "lightgreen", 0x90ee90 },
+	{ "lightgrey", 0xd3d3d3 },
+	{ "lightpink", 0xffb6c1 },
+	{ "lightsalmon", 0xffa07a },
+	{ "lightseagreen", 0x20b2aa },
+	{ "lightskyblue", 0x87cefa },
+	{ "lightslategray", 0x778899 },
+	{ "lightslategrey", 0x778899 },
+	{ "lightsteelblue", 0xb0c4de },
+	{ "lightyellow", 0xffffe0 },
+	{ "lime", 0x00ff00 },
+	{ "limegreen", 0x32cd32 },
+	{ "linen", 0xfaf0e6 },
+	{ "magenta", 0xff00ff },
+	{ "maroon", 0x800000 },
+	{ "mediumaquamarine", 0x66cdaa },
+	{ "mediumblue", 0x0000cd },
+	{ "mediumorchid", 0xba55d3 },
+	{ "mediumpurple", 0x9370db },
+	{ "mediumseagreen", 0x3cb371 },
+	{ "mediumslateblue", 0x7b68ee },
+	{ "mediumspringgreen", 0x00fa9a },
+	{ "mediumturquoise", 0x48d1cc },
+	{ "mediumvioletred", 0xc71585 },
+	{ "midnightblue", 0x191970 },
+	{ "mintcream", 0xf5fffa },
+	{ "mistyrose", 0xffe4e1 },
+	{ "moccasin", 0xffe4b5 },
+	{ "navajowhite", 0xffdead },
+	{ "navy", 0x000080 },
+	{ "oldlace", 0xfdf5e6 },
+	{ "olive", 0x808000 },
+	{ "olivedrab", 0x6b8e23 },
+	{ "orange", 0xffa500 },
+	{ "orangered", 0xff4500 },
+	{ "orchid", 0xda70d6 },
+	{ "palegoldenrod", 0xeee8aa },
+	{ "palegreen", 0x98fb98 },
+	{ "paleturquoise", 0xafeeee },
+	{ "palevioletred", 0xdb7093 },
+	{ "papayawhip", 0xffefd5 },
+	{ "peachpuff", 0xffdab9 },
+	{ "peru", 0xcd853f },
+	{ "pink", 0xffc0cb },
+	{ "plum", 0xdda0dd },
+	{ "powderblue", 0xb0e0e6 },
+	{ "purple", 0x800080 },
+	{ "rebeccapurple", 0x663399 },
+	{ "red", 0xff0000 },
+	{ "rosybrown", 0xbc8f8f },
+	{ "royalblue", 0x4169e1 },
+	{ "saddlebrown", 0x8b4513 },
+	{ "salmon", 0xfa8072 },
+	{ "sandybrown", 0xf4a460 },
+	{ "seagreen", 0x2e8b57 },
+	{ "seashell", 0xfff5ee },
+	{ "sienna", 0xa0522d },
+	{ "silver", 0xc0c0c0 },
+	{ "skyblue", 0x87ceeb },
+	{ "slateblue", 0x6a5acd },
+	{ "slategray", 0x708090 },
+	{ "slategrey", 0x708090 },
+	{ "snow", 0xfffafa },
+	{ "springgreen", 0x00ff7f },
+	{ "steelblue", 0x4682b4 },
+	{ "tan", 0xd2b48c },
+	{ "teal", 0x008080 },
+	{ "thistle", 0xd8bfd8 },
+	{ "tomato", 0xff6347 },
+	{ "turquoise", 0x40e0d0 },
+	{ "violet", 0xee82ee },
+	{ "wheat", 0xf5deb3 },
+	{ "white", 0xffffff },
+	{ "whitesmoke", 0xf5f5f5 },
+	{ "yellow", 0xffff00 },
+	{ "yellowgreen", 0x9acd32 },
+};
+
 unsigned int ThemeData::parseColor(const std::string& str)
 {
-	if (str.empty())
+	if (str.empty() || str == "transparent")
 	{
 		LOG(LogWarning) << "Empty color";
 		return 0;
 	}
+
+	auto htmlColor = htmlColors.find(str);
+	if (htmlColor != htmlColors.cend())
+		return (htmlColor->second << 8) | 0xFF;
 
 	size_t len = str.length();
 	if (len != 6 && len != 8)
@@ -1363,6 +1448,139 @@ bool ThemeData::parseRegion(const pugi::xml_node& node)
 	return false;
 }
 
+void ThemeData::processElement(const pugi::xml_node& root, ThemeElement& element, const std::string& name, const std::string& value, ElementPropertyType type)
+{
+	std::string str = resolvePlaceholders(value.c_str());
+	if (str.find("$") != std::string::npos)
+		str = resolveSystemVariable(mSystemThemeFolder, str);
+
+	switch (type)
+	{
+	case NORMALIZED_RECT:
+	{
+		element.properties[name] = Vector4f::parseString(str);
+		break;
+	}
+	case NORMALIZED_PAIR:
+	{
+		element.properties[name] = Vector2f::parseString(str);
+		break;
+	}
+	case STRING:
+		element.properties[name] = str;
+		break;
+
+	case FLOAT:
+	{
+		element.properties[name] = Utils::String::toFloat(str);
+		break;
+	}
+	case BOOLEAN:
+	{
+		// only look at first char
+		char first = str[0];
+		// 1*, t* (true), T* (True), y* (yes), Y* (YES)
+		bool boolVal = (first == '1' || first == 't' || first == 'T' || first == 'y' || first == 'Y');
+
+		element.properties[name] = boolVal;
+		break;
+	}	
+	case COLOR:
+		element.properties[name] = parseColor(str);
+		break;
+	case PATH:
+	{
+		if (str.empty())
+			break;
+
+		std::string path = Utils::FileSystem::resolveRelativePath(str, Utils::FileSystem::getParent(mPaths.back()), true);
+
+		if (Utils::String::startsWith(path, "{random"))
+		{
+			pugi::xml_node parent = root.parent();
+
+			if (!element.extra)
+				LOG(LogWarning) << "random is only supported in extras";
+			else if (element.type != "image" && element.type != "video")
+				LOG(LogWarning) << "random is only supported in video or image elements";
+			else if (std::string(parent.name()) != "view" || std::string(parent.attribute("name").as_string()) != "system")
+				LOG(LogWarning) << "random is only supported in systemview";
+			else if (element.type == "video" && path != "{random}")
+				LOG(LogWarning) << "video element only supports {random} element";
+			else if (element.type == "image" && path != "{random}" && path != "{random:thumbnail}" && path != "{random:marquee}" && path != "{random:image}" && path != "{random:fanart}" && path != "{random:titleshot}")
+				LOG(LogWarning) << "unknow random element " << path;
+			else
+				element.properties[name] = path;
+
+			break;
+		}
+
+		if (path[0] == '/')
+		{
+#if WIN32
+			path = Utils::String::replace(path,
+				"/recalbox/share_init/system/.emulationstation/themes",
+				Utils::FileSystem::getEsConfigPath() + "/themes");
+#else
+			path = Utils::String::replace(path,
+				"/recalbox/share_init/system/.emulationstation/themes",
+				"/userdata/themes");
+#endif
+		}
+
+		if (path == "none")
+		{
+			if (element.properties.find(name) != element.properties.cend())
+				element.properties.erase(name);
+		}
+		else
+		{
+			if (ResourceManager::getInstance()->fileExists(path))
+			{
+				element.properties[name] = path;
+				break;
+			}
+			else if ((str[0] == '.' || str[0] == '~') && mPaths.size() > 1)
+			{
+				std::string rootPath = Utils::FileSystem::resolveRelativePath(str, Utils::FileSystem::getParent(mPaths.front()), true);
+				if (rootPath != path && ResourceManager::getInstance()->fileExists(rootPath))
+				{
+					element.properties[name] = rootPath;
+					break;
+				}
+			}
+
+			LOG(LogDebug) << "Warning : could not find file \"" << value << "\" " << "(which resolved to \"" << path << "\") ";
+		}
+
+		break;
+	}
+	default:
+		LOG(LogWarning) << "Unknown ElementPropertyType for \"" << root.attribute("name").as_string() << "\", property " << name;
+		break;
+	}
+}
+
+bool ThemeData::findPropertyFromBaseClass(const std::string& typeName, const std::string& propertyName, ElementPropertyType& type)
+{
+	auto baseClassIt = sBaseClasses.find(typeName);
+	if (baseClassIt == sBaseClasses.cend())
+		return false;
+
+	auto ctrlElements = sElementMap.find(baseClassIt->second);
+	if (ctrlElements == sElementMap.cend())
+		return findPropertyFromBaseClass(baseClassIt->second, propertyName, type);
+		
+	auto it = ctrlElements->second.find(propertyName);
+	if (it != ctrlElements->second.cend())
+	{
+		type = it->second;
+		return true;		 
+	}	
+	
+	return findPropertyFromBaseClass(baseClassIt->second, propertyName, type);
+}
+
 void ThemeData::parseElement(const pugi::xml_node& root, const std::map<std::string, ElementPropertyType>& typeMap, ThemeElement& element, bool overwrite)
 {
 	// ThemeException error;
@@ -1380,6 +1598,26 @@ void ThemeData::parseElement(const pugi::xml_node& root, const std::map<std::str
 		else if (extra == "static")
 			element.extra = 2;
 	}	
+
+	for (pugi::xml_attribute attribute : root.attributes())
+	{
+		std::string name = attribute.name();
+		if (name == "extra" || name == "name" || name == "ifSubset" || name == "lang" || name == "region" || name == "verticalScreen" || name == "tinyScreen" || name == "ifHelpPrompts" || name == "ifCheevos")
+			continue;
+
+		ElementPropertyType type = STRING;
+		auto typeIt = typeMap.find(name);
+
+		if (typeIt != typeMap.cend())
+			type = typeIt->second;
+		else if (!findPropertyFromBaseClass(root.name(), name, type))
+			continue;
+
+		if (!overwrite && element.properties.find(name) != element.properties.cend())
+			continue;
+
+		processElement(root, element, name, attribute.as_string(), type);
+	}
 
 	for(pugi::xml_node node = root.first_child(); node; node = node.next_sibling())
 	{
@@ -1426,11 +1664,26 @@ void ThemeData::parseElement(const pugi::xml_node& root, const std::map<std::str
 				type = PATH;
 			else if (name == "animate" && std::string(root.name()) == "imagegrid")
 				node.set_name("animateSelection");
-			else
+			else if (node.attribute("name"))
 			{
-				LOG(LogWarning) << "Unknown property type \"" << name << "\" (for element of type " << root.name() << ").";
+				auto elemTypeIt = sElementMap.find(name);
+				if (elemTypeIt == sElementMap.cend())
+				{
+					LOG(LogWarning) << "Unknown property type \"" << name << "\" (for element of type " << root.name() << ").";
+					continue;
+				}
+
+				const std::string elemKey = node.attribute("name").as_string();
+
+				element.children.push_back(std::pair<std::string, ThemeElement>(elemKey, ThemeElement()));
+
+				std::pair<std::string, ThemeElement>& item = element.children.back();
+				item.second.extra = 1;
+				parseElement(node, elemTypeIt->second, item.second, overwrite);
 				continue;
 			}
+			else if (!findPropertyFromBaseClass(root.name(), name, type))
+				continue;
 		}
 		else
 			type = typeIt->second;
@@ -1438,113 +1691,7 @@ void ThemeData::parseElement(const pugi::xml_node& root, const std::map<std::str
 		if (!overwrite && element.properties.find(name) != element.properties.cend())
 			continue;
 
-		std::string str = resolveSystemVariable(mSystemThemeFolder, resolvePlaceholders(node.text().as_string()));
-
-		switch(type)
-		{
-		case NORMALIZED_RECT:
-		{
-			element.properties[name] = Vector4f::parseString(str);
-			break;
-		}
-		case NORMALIZED_PAIR:
-		{
-			element.properties[name] = Vector2f::parseString(str);
-			break;
-		}
-		case STRING:
-			element.properties[name] = str;
-			break;
-		case PATH:
-		{
-			if (str.empty())
-				break;
-
-			std::string path = Utils::FileSystem::resolveRelativePath(str, Utils::FileSystem::getParent(mPaths.back()), true);
-			
-			if (Utils::String::startsWith(path, "{random"))
-			{
-				pugi::xml_node parent = root.parent();
-
-				if (!element.extra)
-					LOG(LogWarning) << "random is only supported in extras";
-				else if (element.type != "image" && element.type != "video")
-					LOG(LogWarning) << "random is only supported in video or image elements";
-				else if (std::string(parent.name()) != "view" || std::string(parent.attribute("name").as_string()) != "system")
-					LOG(LogWarning) << "random is only supported in systemview";
-				else if (element.type == "video" && path != "{random}")
-					LOG(LogWarning) << "video element only supports {random} element";
-				else if (element.type == "image" && path != "{random}" && path != "{random:thumbnail}" && path != "{random:marquee}" && path != "{random:image}" && path != "{random:fanart}" && path != "{random:titleshot}")
-					LOG(LogWarning) << "unknow random element " << path;
-				else
-					element.properties[name] = path;
-
-				break;
-			}
-
-			if (path[0] == '/')
-			{
-#if WIN32
-				path = Utils::String::replace(path,
-					"/recalbox/share_init/system/.emulationstation/themes",
-					Utils::FileSystem::getEsConfigPath() + "/themes");
-#else
-				path = Utils::String::replace(path,
-					"/recalbox/share_init/system/.emulationstation/themes",
-					"/userdata/themes");
-#endif
-			}
-
-			if (path == "none")
-			{
-				if (element.properties.find(name) != element.properties.cend())
-					element.properties.erase(name);
-			}
-			else
-			{
-				if (ResourceManager::getInstance()->fileExists(path))
-				{
-					element.properties[name] = path;
-					break;
-				}
-				else if ((str[0] == '.' || str[0] == '~') && mPaths.size() > 1)
-				{
-					std::string rootPath = Utils::FileSystem::resolveRelativePath(str, Utils::FileSystem::getParent(mPaths.front()), true);
-					if (rootPath != path && ResourceManager::getInstance()->fileExists(rootPath))
-					{
-						element.properties[name] = rootPath;
-						break;
-					}
-				}				
-
-				LOG(LogDebug) << "Warning : could not find file \"" << node.text().get() << "\" " << "(which resolved to \"" << path << "\") ";
-			}
-
-			break;
-		}
-		case COLOR:
-			element.properties[name] = parseColor(str);
-			break;
-		case FLOAT:
-		{
-			element.properties[name] = Utils::String::toFloat(str);
-			break;
-		}
-
-		case BOOLEAN:
-		{
-			// only look at first char
-			char first = str[0];
-			// 1*, t* (true), T* (True), y* (yes), Y* (YES)
-			bool boolVal = (first == '1' || first == 't' || first == 'T' || first == 'y' || first == 'Y');
-
-			element.properties[name] = boolVal;
-			break;
-		}
-		default:
-			LOG(LogWarning) << "Unknown ElementPropertyType for \"" << root.attribute("name").as_string() << "\", property " << name;
-			break;
-		}
+		processElement(root, element, name, node.text().as_string(), type);		
 	}
 }
 
@@ -1645,6 +1792,51 @@ const std::shared_ptr<ThemeData>& ThemeData::getDefault()
 	return theme;
 }
 
+GuiComponent* ThemeData::createExtraComponent(Window* window, const ThemeElement& elem, bool forceLoad)
+{
+	GuiComponent* comp = nullptr;
+
+	if (elem.type == "container" || elem.type == "control")
+		comp = new GuiComponent(window);
+	else if (elem.type == "clock")
+		comp = new ClockComponent(window);
+	else if (elem.type == "networkIcon")
+		comp = new NetworkIconComponent(window);	
+	else if (elem.type == "batteryIcon")
+		comp = new BatteryIconComponent(window);
+	else if (elem.type == "batteryIndicator")
+		comp = new BatteryIndicatorComponent(window);
+	else if (elem.type == "image")
+		comp = new ImageComponent(window, forceLoad);
+	else if (elem.type == "text")
+		comp = new TextComponent(window);
+	else if (elem.type == "ninepatch")
+		comp = new NinePatchComponent(window);
+	else if (elem.type == "video")
+		comp = new VideoVlcComponent(window);
+
+	if (comp != nullptr)
+	{
+		comp->setExtraType((GuiComponent::ExtraType) elem.extra);
+		comp->setDefaultZIndex(10);
+	}
+
+	return comp;
+}
+
+void ThemeData::applySelfTheme(GuiComponent* comp, const ThemeElement& elem)
+{
+	auto theme = std::make_shared<ThemeData>();
+
+	ThemeView& view = theme->mViews.insert(std::pair<std::string, ThemeView>("default", ThemeView())).first->second;
+	auto element = view.elements.insert(std::pair<std::string, ThemeElement>("default", elem));
+
+	comp->applyTheme(theme, "default", "default", ThemeFlags::ALL);
+
+	// Clear storyboard or they'll be deleted as we use a temporary fake theme...
+	element.first->second.mStoryBoards.clear();	
+}
+
 std::vector<GuiComponent*> ThemeData::makeExtras(const std::shared_ptr<ThemeData>& theme, const std::string& view, Window* window, bool forceLoad, ExtraImportType type)
 {
 	std::vector<GuiComponent*> comps;
@@ -1672,26 +1864,13 @@ std::vector<GuiComponent*> ThemeData::makeExtras(const std::shared_ptr<ThemeData
 					continue;
 			}
 
-			GuiComponent* comp = nullptr;
-
-			const std::string& t = elem.type;
-			if(t == "image")
-				comp = new ImageComponent(window, forceLoad);
-			else if(t == "text")
-				comp = new TextComponent(window);
-			else if (t == "ninepatch")
-				comp = new NinePatchComponent(window);
-			else if (t == "video")
-				comp = new VideoVlcComponent(window);
-
-			if (comp == nullptr)
-				continue;
-
-			comp->setIsStaticExtra(elem.extra == 2);
-			comp->setTag((*it).c_str());
-			comp->setDefaultZIndex(10);
-			comp->applyTheme(theme, view, *it, ThemeFlags::ALL);
-			comps.push_back(comp);
+			GuiComponent* comp = createExtraComponent(window, elem, forceLoad);
+			if (comp != nullptr)
+			{
+				comp->setTag((*it).c_str());
+				comp->applyTheme(theme, view, *it, ThemeFlags::ALL);
+				comps.push_back(comp);
+			}
 		}
 	}
 
@@ -2030,6 +2209,7 @@ ThemeData::ThemeElement::ThemeElement(const ThemeElement& src)
 	extra = src.extra;
 	type = src.type;
 	properties = src.properties;
+	children = src.children;
 
 	for (auto sb : src.mStoryBoards)
 		mStoryBoards[sb.first] = new ThemeStoryboard(*sb.second);

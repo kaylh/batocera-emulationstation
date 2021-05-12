@@ -8,8 +8,7 @@
 ButtonComponent::ButtonComponent(Window* window, const std::string& text, const std::string& helpText, const std::function<void()>& func, bool upperCase) : GuiComponent(window),
 	mBox(window, ThemeData::getMenuTheme()->Button.path),	
 	mFocused(false), 
-	mEnabled(true),
-	mPadding(Vector4f(0, 0, 0, 0))
+	mEnabled(true)	
 {
 	auto menuTheme = ThemeData::getMenuTheme();
 
@@ -158,11 +157,7 @@ std::vector<HelpPrompt> ButtonComponent::getHelpPrompts()
 	return prompts;
 }
 
-void ButtonComponent::setPadding(const Vector4f padding)
+void ButtonComponent::onPaddingChanged()
 {
-	if (mPadding == padding)
-		return;
-
-	mPadding = padding;
 	onSizeChanged();
 }

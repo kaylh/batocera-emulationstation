@@ -164,6 +164,8 @@ void TextureResource::prioritize() const
 
 void TextureResource::setRequired(bool value) const
 {
+	return;
+
 	if (mTextureData != nullptr)
 		return;
 	

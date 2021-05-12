@@ -57,6 +57,7 @@ set(CORE_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/SliderComponent.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/SwitchComponent.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/TextComponent.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/components/ClockComponent.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/TextEditComponent.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/VideoComponent.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/VideoPlayerComponent.h
@@ -66,6 +67,8 @@ set(CORE_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/ScrollbarComponent.h	
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/ComponentTab.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/WebImageComponent.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/components/NetworkIconComponent.h	
+	${CMAKE_CURRENT_SOURCE_DIR}/src/components/BatteryIconComponent.h	
 
 	# Guis
 	${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiDetectDevice.h
@@ -155,6 +158,7 @@ set(CORE_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/SliderComponent.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/SwitchComponent.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/TextComponent.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/components/ClockComponent.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/TextEditComponent.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/VideoComponent.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/VideoPlayerComponent.cpp
@@ -164,6 +168,8 @@ set(CORE_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/MultiLineMenuEntry.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/ComponentTab.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/components/WebImageComponent.cpp	
+	${CMAKE_CURRENT_SOURCE_DIR}/src/components/NetworkIconComponent.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/components/BatteryIconComponent.cpp
 
 	# Guis
 	${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiDetectDevice.cpp

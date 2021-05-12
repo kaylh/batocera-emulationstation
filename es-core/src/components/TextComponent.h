@@ -20,10 +20,11 @@ public:
 	TextComponent(Window* window, const std::string& text, const std::shared_ptr<Font>& font, unsigned int color = 0x000000FF, Alignment align = ALIGN_LEFT,
 		Vector3f pos = Vector3f::Zero(), Vector2f size = Vector2f::Zero(), unsigned int bgcolor = 0x00000000);
 
+	virtual std::string getTypeName() { return "text"; }
+
 	void setFont(const std::shared_ptr<Font>& font);
 	void setFont(std::string path, int size);
-	void setUppercase(bool uppercase);
-	void onSizeChanged() override;
+	void setUppercase(bool uppercase);	
 	const std::string getText() { return mText; }
 	void setText(const std::string& text);
 	void setColor(unsigned int color);
@@ -34,6 +35,9 @@ public:
 	void setRenderBackground(bool render);
 
 	void render(const Transform4x4f& parentTrans) override;
+
+	void onSizeChanged() override;
+	void onPaddingChanged() override;
 
 	std::string getValue() const override;
 	void setValue(const std::string& value) override;
@@ -47,8 +51,6 @@ public:
 	void setGlowColor(unsigned int color) { mGlowColor = color; };
 	void setGlowSize(unsigned int size) { mGlowSize = size; };
 	void setGlowOffset(float x, float y) { mGlowOffset = Vector2f(x,y); };
-
-	void setPadding(const Vector4f padding);
 
 	virtual void update(int deltaTime);
 
@@ -80,6 +82,8 @@ protected:
 	std::shared_ptr<Font> mFont;
 	std::string mSourceText;
 
+	Vector2i mAutoCalcExtent;
+
 private:	
 	void renderSingleGlow(const Transform4x4f& parentTrans, float yOff, float x, float y);
 	void renderGlow(const Transform4x4f& parentTrans, float yOff, float xOff);
@@ -92,7 +96,6 @@ private:
 	bool mRenderBackground;
 
 	bool mUppercase;
-	Vector2i mAutoCalcExtent;
 	std::shared_ptr<TextCache> mTextCache;
 	Alignment mHorizontalAlignment;
 	Alignment mVerticalAlignment;
@@ -101,8 +104,7 @@ private:
 	unsigned int mGlowColor;
 	unsigned int mGlowSize;
 	Vector2f	 mGlowOffset;
-	Vector4f	 mPadding;
-	
+
 	Vector2f	mReflection;
 	bool		mReflectOnBorders;
 

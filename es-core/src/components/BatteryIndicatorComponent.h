@@ -10,6 +10,8 @@ class BatteryIndicatorComponent : public ControllerActivityComponent
 public:
 	BatteryIndicatorComponent(Window* window);
 
+	virtual std::string getTypeName() { return "batteryIndicator"; }
+
 protected:
 	virtual void init() override;
 };

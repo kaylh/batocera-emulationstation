@@ -25,6 +25,7 @@ public:
 	inline const std::function<void()>& getPressedFunc() const { return mPressedFunc; };
 
 	void onSizeChanged() override;
+	void onPaddingChanged() override;
 	void onFocusGained() override;
 	void onFocusLost() override;
 
@@ -35,9 +36,6 @@ public:
 	virtual std::vector<HelpPrompt> getHelpPrompts() override;
 
 	void setRenderNonFocusedBackground(bool value) { mRenderNonFocusedBackground = value; }
-
-	Vector4f getPadding() { return mPadding; }
-	void setPadding(const Vector4f padding);
 
 private:
 	std::shared_ptr<Font> mFont;
@@ -63,8 +61,7 @@ private:
 	unsigned int mColor;
 	unsigned int mColorFocused;
 
-	bool mRenderNonFocusedBackground;
-	Vector4f	mPadding;
+	bool mRenderNonFocusedBackground;	
 };
 
 #endif // ES_CORE_COMPONENTS_BUTTON_COMPONENT_H

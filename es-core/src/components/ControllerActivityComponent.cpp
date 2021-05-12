@@ -20,6 +20,7 @@ ControllerActivityComponent::ControllerActivityComponent(Window* window) : GuiCo
 
 void ControllerActivityComponent::init()
 {
+	mAutoCalcExtent = Vector2i(false, false);
 	mBatteryFont = nullptr;
 	mBatteryText = nullptr;
 	mBatteryTextX = -999;
@@ -238,9 +239,9 @@ void ControllerActivityComponent::render(const Transform4x4f& parentTrans)
 		}
 	}
 
-	if (mHorizontalAlignment == ALIGN_CENTER)
+	if (mHorizontalAlignment == ALIGN_CENTER && !mAutoCalcExtent.x())
 		x = mSize.x() / 2.0f - itemsWidth / 2.0f;	
-	else if (mHorizontalAlignment == ALIGN_RIGHT)
+	else if (mHorizontalAlignment == ALIGN_RIGHT && !mAutoCalcExtent.x())
 		x = mSize.x() - itemsWidth;
 
 	if ((mView & CONTROLLERS) && showControllerActivity)
@@ -299,6 +300,9 @@ void ControllerActivityComponent::render(const Transform4x4f& parentTrans)
 	}
 
 	renderChildren(trans);
+
+	if (mAutoCalcExtent.x() && mSize.x() != x)
+		setSize(x, mSize.y());
 }
 
 void ControllerActivityComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const std::string& view, const std::string& element, unsigned int properties)
@@ -309,7 +313,7 @@ void ControllerActivityComponent::applyTheme(const std::shared_ptr<ThemeData>& t
 
 	using namespace ThemeFlags;
 
-	const ThemeData::ThemeElement* elem = theme->getElement(view, element, element);
+	const ThemeData::ThemeElement* elem = theme->getElement(view, element, getTypeName());
 	if (elem == nullptr)
 		return;
 
@@ -384,6 +388,7 @@ void ControllerActivityComponent::applyTheme(const std::shared_ptr<ThemeData>& t
 	}
 
 	onSizeChanged();
+	mAutoCalcExtent = Vector2i((getSize().x() == 0), (getSize().y() == 0));
 }
 
 void ControllerActivityComponent::updateNetworkInfo()
@@ -392,7 +397,7 @@ void ControllerActivityComponent::updateNetworkInfo()
 }
 
 void ControllerActivityComponent::updateBatteryInfo()
-{
+{	
 	if (Settings::getInstance()->getString("ShowBattery").empty() || (mView & BATTERY) == 0)
 	{
 		mBatteryInfo.hasBattery = false;
@@ -458,6 +463,9 @@ Vector2f ControllerActivityComponent::getTextureSize(std::shared_ptr<TextureReso
 
 	auto mTargetSize = mSize;
 	auto textureSize = imageSize;
+
+	if (mTargetSize.x() == 0)
+		mTargetSize.x() = Renderer::getScreenWidth();
 
 	Vector2f resizeScale((mTargetSize.x() / imageSize.x()), (mTargetSize.y() / imageSize.y()));
 	if (resizeScale.x() < resizeScale.y())

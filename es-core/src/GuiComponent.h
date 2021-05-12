@@ -33,11 +33,31 @@ namespace AnimateFlags
 class GuiComponent
 {
 public:
+	enum ExtraType : unsigned int
+	{
+		BUILTIN = 0,
+		EXTRA = 1,
+		STATIC = 2,
+		EXTRACHILDREN = 3
+	};
+
+	enum DockStyle : unsigned int
+	{
+		None = 0,
+		Top = 1,
+		Bottom = 2,
+		Left = 3,
+		Right = 4,
+		Fill = 5,
+	};
+
 	GuiComponent(Window* window);
 	virtual ~GuiComponent();
 
 	template<typename T>
 	bool isKindOf() { return (dynamic_cast<T*>(this) != nullptr); }
+
+	virtual std::string getTypeName() { return "container"; }
 
 	virtual void textInput(const char* text);
 
@@ -76,6 +96,9 @@ public:
     inline void setSize(const Vector2f& size) { setSize(size.x(), size.y()); }
     void setSize(float w, float h);
     virtual void onSizeChanged() {};
+	virtual void onPaddingChanged() {};
+
+	virtual void setTargetSize(float w, float h) { setSize(w, h); }
 
 	virtual void setColor(unsigned int color) {};
 
@@ -166,9 +189,13 @@ public:
 	std::string getTag() const { return mTag; };
 	void setTag(const std::string& value) { mTag = value; };
 	
-	bool isStaticExtra() const { return mStaticExtra; }
-	void setIsStaticExtra(bool value) { mStaticExtra = value; }
+	ExtraType getExtraType() { return mExtraType; }
+	bool isStaticExtra() const { return mExtraType == ExtraType::STATIC; }
+	void setExtraType(ExtraType value) { mExtraType = value; }
 
+	DockStyle getDockStyle() { return mDockStyle; }
+	void setDockStyle(DockStyle value) { mDockStyle = value; }
+	
 	virtual ThemeData::ThemeElement::Property getProperty(const std::string name);
 	virtual void setProperty(const std::string name, const ThemeData::ThemeElement::Property& value);
 
@@ -183,6 +210,7 @@ public:
 	void pauseStoryboard();
 	void stopStoryboard();
 	void enableStoryboardProperty(const std::string& name, bool enable);
+	bool selectAndRunAnyStoryboard(const std::vector<std::string>& names, bool deselectIfNoFound = true);
 
 	bool storyBoardExists(const std::string& name = "", const std::string& propertyName = "");
 
@@ -191,13 +219,21 @@ public:
 	Vector4f& getClipRect() { return mClipRect; }
 	virtual void setClipRect(const Vector4f& vec);
 
+	unsigned char getAmbiantOpacity();
+
+	Vector4f getPadding() { return mPadding; }
+	void setPadding(const Vector4f padding);
+
 protected:
+	void performLayout();
 	void beginCustomClipRect();
 	void endCustomClipRect();
 
 	void renderChildren(const Transform4x4f& transform) const;
 	void updateSelf(int deltaTime); // updates animations
 	void updateChildren(int deltaTime); // updates animations
+
+	void loadThemedChildren(const ThemeData::ThemeElement* elem);
 
 	unsigned char mOpacity;
 	Window* mWindow;
@@ -221,7 +257,11 @@ protected:
 	bool mIsProcessing;
 	bool mVisible;
 	bool mShowing;
-	bool mStaticExtra;
+
+	ExtraType mExtraType;
+	DockStyle mDockStyle;
+
+	Vector4f	mPadding;
 
 public:
 	const static unsigned char MAX_ANIMATIONS = 4;

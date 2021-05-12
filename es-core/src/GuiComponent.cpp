@@ -17,7 +17,7 @@ bool GuiComponent::isLaunchTransitionRunning = false;
 GuiComponent::GuiComponent(Window* window) : mWindow(window), mParent(NULL), mOpacity(255),
 	mPosition(Vector3f::Zero()), mOrigin(Vector2f::Zero()), mRotationOrigin(0.5, 0.5), mScaleOrigin(0.5f, 0.5f),
 	mSize(Vector2f::Zero()), mTransform(Transform4x4f::Identity()), mIsProcessing(false), mVisible(true), mShowing(false),
-	mStaticExtra(false), mStoryboardAnimator(nullptr), mScreenOffset(0.0f)
+	mExtraType(ExtraType::BUILTIN), mStoryboardAnimator(nullptr), mScreenOffset(0.0f), mDockStyle(DockStyle::None), mPadding(Vector4f(0, 0, 0, 0))
 {
 	mClipRect = Vector4f();
 }
@@ -37,8 +37,15 @@ GuiComponent::~GuiComponent()
 	if(mParent)
 		mParent->removeChild(this);
 
-	for(unsigned int i = 0; i < getChildCount(); i++)
-		getChild(i)->setParent(NULL);
+	for (int i = (int) getChildCount() - 1; i >= 0; i--)
+	{
+		auto child = getChild(i);
+
+		if (child->mExtraType == EXTRACHILDREN)
+			delete child;		
+		else
+			child->setParent(NULL);
+	}
 }
 
 bool GuiComponent::input(InputConfig* config, Input input)
@@ -146,8 +153,20 @@ Vector2f GuiComponent::getSize() const
 
 void GuiComponent::setSize(float w, float h)
 {
+	if (mSize.x() == w && mSize.y() == h)
+	{
+		onSizeChanged();
+		return;
+	}
+
 	mSize = Vector2f(w, h);
-    onSizeChanged();
+
+	if (getParent() != nullptr && mDockStyle != DockStyle::None)
+		getParent()->performLayout();
+	else
+		performLayout();
+
+	onSizeChanged();
 }
 
 float GuiComponent::getRotation() const
@@ -206,7 +225,15 @@ bool GuiComponent::isVisible() const
 }
 void GuiComponent::setVisible(bool visible)
 {
+	if (mVisible == visible)
+		return;
+
 	mVisible = visible;
+
+	if (getParent() != nullptr && mDockStyle != DockStyle::None)
+		getParent()->performLayout();
+	else
+		performLayout();
 }
 
 Vector2f GuiComponent::getCenter() const
@@ -516,6 +543,11 @@ bool GuiComponent::storyBoardExists(const std::string& name, const std::string& 
 
 bool GuiComponent::selectStoryboard(const std::string& name)
 {
+	bool ret = false;
+
+	for (auto child : mChildren)
+		ret |= child->selectStoryboard(name);
+
 	if (mStoryboardAnimator != nullptr && mStoryboardAnimator->getName() == name)
 		return true;
 
@@ -533,7 +565,7 @@ bool GuiComponent::selectStoryboard(const std::string& name)
 		return true;
 	}
 
-	return false;
+	return ret;
 }
 
 bool GuiComponent::applyStoryboard(const ThemeData::ThemeElement* elem, const std::string name)
@@ -553,22 +585,34 @@ void GuiComponent::stopStoryboard()
 {
 	if (mStoryboardAnimator)
 		mStoryboardAnimator->stop();
+
+	for (auto child : mChildren)
+		child->stopStoryboard();
 }
 
 void GuiComponent::startStoryboard()
 {
 	if (mStoryboardAnimator)
 		mStoryboardAnimator->reset();
+
+	for (auto child : mChildren)
+		child->startStoryboard();
 }
 
 void GuiComponent::pauseStoryboard() 
 { 
 	if (mStoryboardAnimator) 
 		mStoryboardAnimator->pause(); 
+
+	for (auto child : mChildren)
+		child->pauseStoryboard();
 }
 
 void GuiComponent::deselectStoryboard(bool restoreinitialProperties)
 {
+	for (auto child : mChildren)
+		child->deselectStoryboard(restoreinitialProperties);
+
 	if (mStoryboardAnimator != nullptr)
 	{
 		if (!restoreinitialProperties)
@@ -678,6 +722,26 @@ void GuiComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const std
 		mScreenOffset = Vector2f(mScreenOffset.x(), denormalized);
 	}
 
+	if (properties & POSITION && elem->has("padding"))
+		setPadding(elem->get<Vector4f>("padding") * Vector4f(scale.x(), scale.y(), scale.x(), scale.y()));
+
+	if (properties & POSITION && elem->has("dock"))
+	{
+		std::string dock = elem->get<std::string>("dock");
+		if (dock == "fill")
+			mDockStyle = DockStyle::Fill;
+		else if (dock == "left")
+			mDockStyle = DockStyle::Left;
+		else if (dock == "right")
+			mDockStyle = DockStyle::Right;
+		else if (dock == "top")
+			mDockStyle = DockStyle::Top;
+		else if (dock == "bottom")
+			mDockStyle = DockStyle::Bottom;
+		else 
+			mDockStyle = DockStyle::None;
+	}
+
 	if (properties & POSITION && elem->has("clipRect"))
 	{
 		Vector4f val = elem->get<Vector4f>("clipRect") * Vector4f(screenScale.x(), screenScale.y(), screenScale.x(), screenScale.y());
@@ -687,7 +751,9 @@ void GuiComponent::applyTheme(const std::shared_ptr<ThemeData>& theme, const std
 		setClipRect(Vector4f());
 
 	applyStoryboard(elem);
+	loadThemedChildren(elem);	
 }
+
 
 void GuiComponent::updateHelpPrompts()
 {
@@ -1005,3 +1071,150 @@ void GuiComponent::endCustomClipRect()
 	if (!mClipRect.empty() && !GuiComponent::isLaunchTransitionRunning)
 		Renderer::popClipRect();
 }
+
+void GuiComponent::loadThemedChildren(const ThemeData::ThemeElement* elem)
+{
+	if (mChildren.size())
+	{
+		for (int i = (int)mChildren.size() - 1; i >= 0; i--)
+		{
+			auto child = getChild(i);
+			if (child->mExtraType == EXTRACHILDREN)
+				delete child;
+		}
+	}
+
+	if (elem->children.size() == 0)
+		return;
+
+	for (auto child : elem->children)
+	{
+		auto comp = ThemeData::createExtraComponent(mWindow, child.second, false);
+		if (comp != nullptr)
+		{
+			comp->setTag(child.first);
+			comp->setExtraType(ExtraType::EXTRACHILDREN);
+
+			addChild(comp);
+			ThemeData::applySelfTheme(comp, child.second);			
+		}
+	}	
+
+	sortChildren();
+	performLayout();
+}
+
+bool GuiComponent::selectAndRunAnyStoryboard(const std::vector<std::string>& names, bool deselectIfNoFound)
+{
+	bool ret = false;
+
+	for (auto name : names)
+	{
+		if (selectStoryboard(name))
+		{
+			startStoryboard();
+			ret = true;
+			break;
+		}
+	}
+
+	if (!ret && deselectIfNoFound)
+		deselectStoryboard();
+
+	for (auto child : mChildren)
+		child->selectAndRunAnyStoryboard(names, deselectIfNoFound);
+
+	return ret;
+}
+
+unsigned char GuiComponent::getAmbiantOpacity()
+{
+	float op = mOpacity / 255.0;
+
+	GuiComponent* item = this->mParent;
+	while (item != nullptr)
+	{		
+		if (item->mOpacity == 0)
+			return 0;
+
+		op = op * (item->mOpacity / 255.0);
+		item = item->mParent;
+	}
+
+	return op * 255.0;
+}
+
+void GuiComponent::setPadding(const Vector4f padding)
+{
+	if (mPadding == padding)
+		return;
+
+	mPadding = padding;
+	
+	if (getParent() != nullptr && mDockStyle != DockStyle::None)
+		getParent()->performLayout();
+	else
+		performLayout();
+
+	onPaddingChanged();
+}
+
+void GuiComponent::performLayout()
+{
+	if (!mChildren.size())
+		return;
+	
+	Vector4f rect(mPadding.x(), mPadding.y(), getSize().x() - mPadding.x() - mPadding.z(), getSize().y() - mPadding.y() - mPadding.y());
+	
+	for (GuiComponent* c : mChildren)
+	{
+		if (!c->mVisible)
+			continue;
+
+		Vector4f bounds;
+
+		if (c->mDockStyle == DockStyle::Fill)
+		{
+			bounds = rect;
+		}
+		else if (c->mDockStyle == DockStyle::Top)
+		{
+			float cHeight = c->getSize().y();
+
+			bounds = Vector4f(rect.x(), rect.y(), rect.w(), cHeight);
+			rect.y() += cHeight + 1;
+			rect.w() -= cHeight + 1;
+		}
+		else if (c->mDockStyle == DockStyle::Bottom)
+		{
+			float cHeight = c->getSize().y();
+
+			bounds = Vector4f(rect.x(), rect.w() - cHeight, rect.w(), cHeight);
+			rect.w() -= cHeight + 1;
+		}
+		else if (c->mDockStyle == DockStyle::Left)
+		{
+			float cWidth = c->getSize().x();
+			
+			bounds = Vector4f(rect.x(), rect.y(), cWidth, rect.w());
+			rect.x() += cWidth + 1;
+			rect.z() -= cWidth + 1;
+		}
+		else if (c->mDockStyle == DockStyle::Right)
+		{
+			float cWidth = c->getSize().x();
+
+			bounds = Vector4f(rect.z() - cWidth, rect.y(), cWidth, rect.w());
+			rect.z() -= cWidth + 1;
+		}
+
+		if (c->mDockStyle != DockStyle::None)
+		{			
+			c->setPosition(bounds.x() + (c->mOrigin.x() * bounds.z()), bounds.y() + (c->mOrigin.y() * bounds.w()));
+			c->setTargetSize(bounds.z(), bounds.w());
+		}
+
+		c->performLayout();
+	}
+}
+

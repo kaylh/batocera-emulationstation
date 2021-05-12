@@ -7,7 +7,7 @@
 NinePatchComponent::NinePatchComponent(Window* window, const std::string& path, unsigned int edgeColor, unsigned int centerColor) : GuiComponent(window),
 	mCornerSize(16, 16),
 	mEdgeColor(edgeColor), mCenterColor(centerColor),
-	mVertices(NULL), mPadding(Vector4f(0, 0, 0, 0))
+	mVertices(NULL)
 {
 	mTimer = 0;
 	mAnimateTiming = 0;
@@ -373,11 +373,7 @@ void NinePatchComponent::setProperty(const std::string name, const ThemeData::Th
 		GuiComponent::setProperty(name, value);
 }
 
-void NinePatchComponent::setPadding(const Vector4f padding) 
-{ 
-	if (mPadding == padding)
-		return;
-
-	mPadding = padding; 
+void NinePatchComponent::onPaddingChanged()
+{
 	buildVertices();
 }

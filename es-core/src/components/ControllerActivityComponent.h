@@ -19,6 +19,7 @@ public:
 		NETWORK = 4
 	};
 
+	virtual std::string getTypeName() { return "controllerActivity"; }
 
 	ControllerActivityComponent(Window* window);
 
@@ -97,6 +98,8 @@ protected:
 	std::shared_ptr<TextureResource> mNetworkImage;
 	bool mNetworkConnected;
 	int mNetworkCheckTime;
+
+	Vector2i mAutoCalcExtent;
 
 protected:
 	// Battery info
