@@ -1,6 +1,6 @@
 version: "1"
 rules:
-  - base: beta
+  - base: master
     upstream: batocera-linux:master
     mergeMethod: hardreset
   - base: stable
