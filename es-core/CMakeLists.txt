@@ -90,6 +90,7 @@ set(CORE_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Renderer_GL21.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Renderer_GLES10.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Renderer_GLES20.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Renderer_SDL2.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/GlExtensions.h	
 
 	# Resources
@@ -195,6 +196,7 @@ set(CORE_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Renderer_GL21.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Renderer_GLES10.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Renderer_GLES20.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Renderer_SDL2.cpp	
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/GlExtensions.cpp	
 	${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/Shader.cpp	
 

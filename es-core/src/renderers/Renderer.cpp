@@ -3,6 +3,7 @@
 #include "Renderer_GL21.h"
 #include "Renderer_GLES10.h"
 #include "Renderer_GLES20.h"
+#include "Renderer_SDL2.h"
 
 #include "math/Transform4x4f.h"
 #include "math/Vector2i.h"
@@ -588,6 +589,8 @@ namespace Renderer
 
 	static IRenderer* createRenderer()
 	{
+		return new SDL2Renderer();
+
 		IRenderer* instance = getRendererFromName(Settings::getInstance()->getString("Renderer"));
 		if (instance == nullptr)
 		{
