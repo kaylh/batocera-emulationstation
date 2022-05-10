@@ -259,28 +259,31 @@ void SystemView::populate()
 {
 	TextureLoader::paused = true;
 
+//	bool preloadUI = Settings::getInstance()->getBool("PreloadUI");
+
 	clearEntries();
 
-	for(auto it = SystemData::sSystemVector.cbegin(); it != SystemData::sSystemVector.cend(); it++)
+	for (auto system : SystemData::sSystemVector)
 	{
-		const std::shared_ptr<ThemeData>& theme = (*it)->getTheme();
+		const std::shared_ptr<ThemeData>& theme = system->getTheme();
 		if (theme == nullptr)
 			continue;
 
-		if(mViewNeedsReload)
+		if (mViewNeedsReload)
 			getViewElements(theme);
 
-		if((*it)->isVisible())
-		{
-			Entry e;
-			e.name = (*it)->getName();
-			e.object = *it;
+		if (!system->isVisible())
+			continue;
 
+		Entry e;
+		e.name = system->getName();
+		e.object = system;
+
+//		if (preloadUI)
 			ensureLogo(e);
-			loadExtras(*it, e);
 
-			add(e);
-		}
+		loadExtras(system, e);
+		add(e);
 	}
 
 	TextureLoader::paused = false;

@@ -309,7 +309,7 @@ bool TextureLoader::paused = false;
 void TextureLoader::load(std::shared_ptr<TextureData> textureData)
 {
 //	if (paused)
-	//	return;
+//		return;
 
 	std::unique_lock<std::mutex> lock(mLoaderLock);
 

@@ -21,7 +21,7 @@
 #include "ThreadedHasher.h"
 #include <unordered_set>
 #include <algorithm>
-#include "SaveStateRepository.h"
+#include "savestates/SaveStateRepository.h"
 #include "Paths.h"
 
 #if WIN32
@@ -1130,9 +1130,11 @@ void SystemData::deleteSystems()
 
 std::string SystemData::getConfigPath()
 {
+#if WIN32
 	std::string customPath = Paths::getUserEmulationStationPath() + "/es_systems_custom.cfg";
 	if (Utils::FileSystem::exists(customPath))
 		return customPath;
+#endif
 
 	std::string userdataPath = Paths::getUserEmulationStationPath() + "/es_systems.cfg";
 	if(Utils::FileSystem::exists(userdataPath))
@@ -1296,14 +1298,14 @@ GameCountInfo* SystemData::getGameCountInfo()
 	if (mGameCountInfo != nullptr)
 		return mGameCountInfo;	
 
-	std::vector<FileData*> games = mRootFolder->getFilesRecursive(GAME, true);
+	std::vector<FileData*> games = mRootFolder->getFilesRecursive(GAME, true, nullptr, true, true);
 
 	int realTotal = games.size();
 	if (mFilterIndex != nullptr)
 	{
 		auto savedFilter = mFilterIndex;
 		mFilterIndex = nullptr;
-		realTotal = mRootFolder->getFilesRecursive(GAME, true).size();
+		realTotal = mRootFolder->getFilesRecursive(GAME, true, nullptr, true, true).size();
 		mFilterIndex = savedFilter;
 	}
 

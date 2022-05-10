@@ -6,7 +6,7 @@
 #include "SystemData.h"
 #include "LocaleES.h"
 #include "LangParser.h"
-#include "SaveStateRepository.h"
+#include "savestates/SaveStateRepository.h"
 #include "SystemConf.h"
 #include "Window.h"
 #include "components/ComponentGrid.h"

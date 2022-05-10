@@ -26,12 +26,12 @@
 #include "LangParser.h"
 #include "resources/ResourceManager.h"
 #include "RetroAchievements.h"
-#include "SaveStateRepository.h"
 #include "Genres.h"
 #include "TextToSpeech.h"
 #include "LocaleES.h"
 #include "guis/GuiMsgBox.h"
 #include "Paths.h"
+#include "savestates/SaveStateRepository.h"
 
 FileData* FileData::mRunningGame = nullptr;
 
@@ -482,6 +482,11 @@ std::string FileData::getlaunchCommand(LaunchGameOptions& options, bool includeC
 			command = command + " -core %CORE%";
 	}
 
+	std::string saveSaveArgs;
+
+	if (SaveStateRepository::isEnabled(this) && options.saveStateInfo != nullptr)
+		saveSaveArgs = options.saveStateInfo->setupSaveState(this);
+	
 	const std::string rom = Utils::FileSystem::getEscapedPath(getPath());
 	const std::string basename = Utils::FileSystem::getStem(getPath());
 	const std::string rom_raw = Utils::FileSystem::getPreferredPath(getPath());
@@ -548,8 +553,8 @@ std::string FileData::getlaunchCommand(LaunchGameOptions& options, bool includeC
 	if (monitorId >= 0 && command.find(" -system ") != std::string::npos)
 		command = command + " -monitor " + std::to_string(monitorId);
 
-	if (SaveStateRepository::isEnabled(this))
-		command = options.saveStateInfo.setupSaveState(this, command);
+	if (!saveSaveArgs.empty())
+		command = command = +" " + saveSaveArgs;
 
 	return command;
 }
@@ -634,7 +639,9 @@ bool FileData::launchGame(Window* window, LaunchGameOptions options)
 
 	if (SaveStateRepository::isEnabled(this))
 	{
-		options.saveStateInfo.onGameEnded(this);
+		if (options.saveStateInfo != nullptr)
+			options.saveStateInfo->onGameEnded(this);
+
 		getSourceFileData()->getSystem()->getSaveStateRepository()->refresh();
 	}
 
@@ -1100,7 +1107,7 @@ std::vector<FileData*> FolderData::getFlatGameList(bool displayedOnly, SystemDat
 	return getFilesRecursive(GAME, displayedOnly, system);
 }
 
-std::vector<FileData*> FolderData::getFilesRecursive(unsigned int typeMask, bool displayedOnly, SystemData* system, bool includeVirtualStorage) const
+std::vector<FileData*> FolderData::getFilesRecursive(unsigned int typeMask, bool displayedOnly, SystemData* system, bool includeVirtualStorage, bool forceTakeHidden) const
 {
 	std::vector<FileData*> out;
 
@@ -1118,6 +1125,9 @@ std::vector<FileData*> FolderData::getFilesRecursive(unsigned int typeMask, bool
 	auto shv = Settings::getInstance()->getString(getSystem()->getName() + ".ShowHiddenFiles");
 	if (shv == "1") showHiddenFiles = true;
 	else if (shv == "0") showHiddenFiles = false;
+
+	if (forceTakeHidden)
+		showHiddenFiles = true;
 
 	SystemData* pSystem = (system != nullptr ? system : mSystem);
 	

@@ -18,7 +18,7 @@
 #include "guis/GuiGameOptions.h"
 #include "guis/GuiTextEditPopup.h"
 #include "guis/GuiTextEditPopupKeyboard.h"
-#include "SaveStateRepository.h"
+#include "savestates/SaveStateRepository.h"
 #include "guis/GuiSaveState.h"
 #include "guis/GuiGamelistOptions.h"
 #include "BasicGameListView.h"
@@ -344,12 +344,12 @@ void ISimpleGameListView::showSelectedGameSaveSnapshots()
 	{
 		Sound::getFromTheme(mTheme, getName(), "menuOpen")->play();
 
-		mWindow->pushGui(new GuiSaveState(mWindow, cursor, [this, cursor](SaveState state)
+		mWindow->pushGui(new GuiSaveState(mWindow, cursor, [this, cursor](const SaveState* state)
 		{
 			Sound::getFromTheme(getTheme(), getName(), "launch")->play();
 
 			LaunchGameOptions options;
-			options.saveStateInfo = state;
+			options.setSaveState(state);
 			ViewController::get()->launch(cursor, options);
 		}
 		));
@@ -385,12 +385,12 @@ void ISimpleGameListView::launchSelectedGame()
 			if (SaveStateRepository::isEnabled(cursor) &&
 				(cursor->getCurrentGameSetting("savestates") == "1" || (cursor->getCurrentGameSetting("savestates") == "2" && cursor->getSourceFileData()->getSystem()->getSaveStateRepository()->hasSaveStates(cursor))))
 			{
-				mWindow->pushGui(new GuiSaveState(mWindow, cursor, [this, cursor](SaveState state)
+				mWindow->pushGui(new GuiSaveState(mWindow, cursor, [this, cursor](const SaveState* state)
 				{
 					Sound::getFromTheme(getTheme(), getName(), "launch")->play();
 
 					LaunchGameOptions options;
-					options.saveStateInfo = state;
+					options.setSaveState(state);
 					ViewController::get()->launch(cursor, options);
 				}
 				));

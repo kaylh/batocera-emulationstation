@@ -24,8 +24,9 @@ set(ES_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/src/services/HttpApi.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/services/httplib.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/RetroAchievements.h
-	${CMAKE_CURRENT_SOURCE_DIR}/src/SaveState.h
-	${CMAKE_CURRENT_SOURCE_DIR}/src/SaveStateRepository.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/savestates/SaveState.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/savestates/SaveStateRepository.h
+	${CMAKE_CURRENT_SOURCE_DIR}/src/savestates/SaveStateConfig.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/CustomFeatures.h
 
     # GuiComponents
@@ -129,8 +130,9 @@ set(ES_SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/src/services/HttpServerThread.cpp	
 	${CMAKE_CURRENT_SOURCE_DIR}/src/services/HttpApi.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/RetroAchievements.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/SaveState.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/src/SaveStateRepository.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/savestates/SaveState.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/savestates/SaveStateRepository.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/src/savestates/SaveStateConfig.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/src/CustomFeatures.cpp	
 
     # GuiComponents

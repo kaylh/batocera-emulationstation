@@ -10,7 +10,7 @@
 #include <stack>
 #include "KeyboardMapping.h"
 #include "SystemData.h"
-#include "SaveState.h"
+#include "savestates/SaveState.h"
 
 class Window;
 struct SystemEnvironmentData;
@@ -41,7 +41,7 @@ enum NetPlayMode
 
 struct LaunchGameOptions
 {
-	LaunchGameOptions() { netPlayMode = NetPlayMode::DISABLED; }
+	LaunchGameOptions() { saveStateInfo = nullptr; netPlayMode = NetPlayMode::DISABLED; }
 
 	int netPlayMode;
 	std::string ip;
@@ -50,7 +50,12 @@ struct LaunchGameOptions
 	std::string core;
 	std::string netplayClientPassword;
 
-	SaveState	saveStateInfo;
+	void setSaveState(const SaveState* state)
+	{
+		saveStateInfo = (SaveState*) state;
+	}
+
+	SaveState*	saveStateInfo;
 };
 
 class FolderData;
@@ -214,7 +219,7 @@ public:
 	const std::vector<FileData*> getChildrenListToDisplay();
 	std::shared_ptr<std::vector<FileData*>> findChildrenListToDisplayAtCursor(FileData* toFind, std::stack<FileData*>& stack);
 
-	std::vector<FileData*> getFilesRecursive(unsigned int typeMask, bool displayedOnly = false, SystemData* system = nullptr, bool includeVirtualStorage = true) const;
+	std::vector<FileData*> getFilesRecursive(unsigned int typeMask, bool displayedOnly = false, SystemData* system = nullptr, bool includeVirtualStorage = true, bool forceTakeHidden = false) const;
 	std::vector<FileData*> getFlatGameList(bool displayedOnly, SystemData* system) const;
 
 	void addChild(FileData* file, bool assignParent = true); // Error if mType != FOLDER

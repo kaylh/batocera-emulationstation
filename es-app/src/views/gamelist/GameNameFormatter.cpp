@@ -7,7 +7,7 @@
 
 #include "LangParser.h"
 #include "LocaleES.h"
-#include "SaveStateRepository.h"
+#include "savestates/SaveStateRepository.h"
 #include "CollectionSystemManager.h"
 
 #define FOLDERICON	 _U("\uF07C ")

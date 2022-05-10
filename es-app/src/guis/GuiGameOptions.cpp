@@ -23,7 +23,7 @@
 #include "views/SystemView.h"
 #include "GuiGameAchievements.h"
 #include "guis/GuiGameScraper.h"
-#include "SaveStateRepository.h"
+#include "savestates/SaveStateRepository.h"
 #include "guis/GuiSaveState.h"
 #include "SystemConf.h"
 
@@ -146,10 +146,10 @@ GuiGameOptions::GuiGameOptions(Window* window, FileData* game) : GuiComponent(wi
 		{
 			mMenu.addEntry(_("SAVE STATES"), false, [window, game, this]
 			{
-				mWindow->pushGui(new GuiSaveState(mWindow, game, [this, game](SaveState state)
+				mWindow->pushGui(new GuiSaveState(mWindow, game, [this, game](const SaveState* state)
 				{
 					LaunchGameOptions options;
-					options.saveStateInfo = state;
+					options.saveStateInfo = (SaveState*) state;
 					ViewController::get()->launch(game, options);
 				}));
 
