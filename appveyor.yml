@@ -1,0 +1,113 @@
+# version format
+version: '{build}'
+
+# Maximum number of concurrent jobs for the project
+max_jobs: 1
+
+# Build worker image (VM template)
+image: Visual Studio 2015
+
+# clone directory
+clone_folder: c:\src\EmulationStation
+
+# fetch repository as zip archive
+#shallow_clone: true
+
+branches:
+  only:
+    - master
+    - stable
+  except:
+    - continuous-master
+    - continuous-stable
+    
+environment:
+  _LINK_: /FORCE:MULTIPLE
+# matrix:
+#   - prepare_mode: YES
+#   - prepare_mode: NO
+#     name: win32
+#     platform: x86
+
+# build cache to preserve files/folders between builds
+#cache:
+#  - c:\src\downloads
+
+#init:
+  #- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+install:
+  # Install ciuploadtool
+  #- md c:\dev\ciuploadtool
+  #- cd c:\dev\ciuploadtool
+  #- curl -fsSL https://github.com/d1vanov/ciuploadtool/releases/download/continuous-master/ciuploadtool_windows_x86.zip -o ciuploadtool_windows_x86.zip
+  #- 7z x ciuploadtool_windows_x86.zip
+  # Install build dependencies
+  - mkdir c:\src\downloads
+  - mkdir c:\src\lib
+  - cd c:\src\downloads
+  # Install Precompiled dependencies
+  - ps: Start-FileDownload 'http://www.retrobat.ovh/repo/tools/eslibs.7z' -FileName 'eslibs.7z'
+  - 7z x eslibs.7z -oc:\src\lib > NUL
+    
+build_script:
+  # prep for continuous upload
+  #- if %APPVEYOR_REPO_BRANCH%==master if %prepare_mode%==YES c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" -preponly
+  #- if %APPVEYOR_REPO_BRANCH%==beta if %prepare_mode%==YES c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" -preponly
+  #- if %APPVEYOR_REPO_BRANCH%==stable if %prepare_mode%==YES c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" -preponly
+  #- ps: if ($env:prepare_mode -eq "YES") { throw "Failing in order to stop the current build matrix job early" }  
+  - '"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86'
+  - cd c:\src\EmulationStation
+  - git submodule update --init --recursive
+  - mkdir build
+  - cd build
+  - set ES_LIB_DIR=c:\src\lib
+  - cmake -g "Visual Studio 14 2015 x86" .. -DFREETYPE_INCLUDE_DIRS=%ES_LIB_DIR%\freetype\include -DFREETYPE_LIBRARY=%ES_LIB_DIR%\freetype\freetype.lib -DFreeImage_INCLUDE_DIR=%ES_LIB_DIR%\FreeImage\Source -DFreeImage_LIBRARY=%ES_LIB_DIR%\FreeImage\Dist\x32\FreeImage.lib -DSDL2_INCLUDE_DIR=%ES_LIB_DIR%\SDL2\include -DSDL2_LIBRARY=%ES_LIB_DIR%\SDL2\build\Release\SDL2.lib;%ES_LIB_DIR%\SDL2\build\Release\SDL2main.lib;Imm32.lib;version.lib -DCURL_INCLUDE_DIR=%ES_LIB_DIR%\curl-7.50.3\include -DCURL_LIBRARY=%ES_LIB_DIR%\curl-7.50.3\builds\libcurl-vc14-x86-release-dll-ipv6-sspi-winssl\lib\libcurl.lib -DRAPIDJSON_INCLUDE_DIRS=%ES_LIB_DIR%\rapidjson-1.1.0\include -DVLC_VERSION=1.0.0 -DVLC_INCLUDE_DIR=%ES_LIB_DIR%\libvlc\include -DVLC_LIBRARIES=%ES_LIB_DIR%\libvlc\lib\msvc\libvlc.lib;%ES_LIB_DIR%\libvlc\lib\msvc\libvlccore.lib -DSDLMIXER_INCLUDE_DIR=%ES_LIB_DIR%/SDL2_mixer-2.0.4/include -DSDLMIXER_LIBRARY=%ES_LIB_DIR%/SDL2_mixer-2.0.4/lib/x86/SDL2_mixer.lib -DSCREENSCRAPER_DEV_LOGIN="devid=retrobat&devpassword=JRLmOtnZXwo" -DGAMESDB_APIKEY="8d0c672da1c28c48436204317ccb52ca752e0c7539bc3d475552aaad844d2635" -DCHEEVOS_DEV_LOGIN="z=retrobat&y=yALP1ce6fSiIrPSmc4oonKk4QxexS3Rq" -DHFS_DEV_LOGIN="Retrobat:nJuHagHR8NkEz96"
+  - cd c:\src\EmulationStation\build
+  - '"C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild" emulationstation-all.sln /p:Configuration=Release /p:Platform="Win32"'
+  - cd c:\src\EmulationStation
+  - IF EXIST locale\lang ( xcopy locale\lang resources\locale /S /Y /I )
+  - ps: |
+      $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("C:\src\EmulationStation\Release\emulationstation.exe").FileVersion -replace ',','.';
+      $timestamp = Get-Date -Format "yyyymmddHHmm"
+      Update-AppveyorBuild -Version "$version-$timestamp"  
+      "$version-$timestamp" | Out-File c:\src\EmulationStation\version.info -Encoding ASCII
+  - 7z a EmulationStation-Win32.zip C:\src\EmulationStation\Release\*.exe C:\src\EmulationStation\Release\*.exp C:\src\EmulationStation\Release\*.lib
+  - 7z a EmulationStation-Win32.zip C:\src\lib\libvlc\libvlc.dll C:\src\lib\libvlc\libvlccore.dll C:\src\lib\libvlc\plugins
+  - 7z a EmulationStation-Win32.zip C:\src\lib\SDL2_mixer-2.0.4\lib\x86\*.dll
+  - 7z a EmulationStation-Win32.zip C:\src\lib\SDL2\build\Release\SDL2.dll
+  - 7z a EmulationStation-Win32.zip C:\src\lib\curl-7.50.3\builds\libcurl-vc14-x86-release-dll-ipv6-sspi-winssl\bin\libcurl.dll
+  - 7z a EmulationStation-Win32.zip C:\src\lib\FreeImage\Win32\Release\FreeImage.dll
+  - 7z a EmulationStation-Win32.zip C:\src\EmulationStation\resources
+  - 7z a EmulationStation-Win32.zip C:\src\EmulationStation\version.info
+
+  - 7z a EmulationStation-Win32-no-deps.zip C:\src\EmulationStation\Release\*.exe C:\src\EmulationStation\Release\*.exp C:\src\EmulationStation\Release\*.lib
+  - 7z a EmulationStation-Win32-no-deps.zip C:\src\EmulationStation\resources
+  - 7z a EmulationStation-Win32-no-deps.zip C:\src\EmulationStation\version.info
+
+#on_finish:
+#  - if %APPVEYOR_REPO_BRANCH%==master c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" C:\src\EmulationStation\*.zip
+#  - if %APPVEYOR_REPO_BRANCH%==master c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" C:\src\EmulationStation\version.info
+#  - if %APPVEYOR_REPO_BRANCH%==beta c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" C:\src\EmulationStation\*.zip
+#  - if %APPVEYOR_REPO_BRANCH%==beta c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" C:\src\EmulationStation\version.info
+#  - if %APPVEYOR_REPO_BRANCH%==stable c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" C:\src\EmulationStation\*.zip
+#  - if %APPVEYOR_REPO_BRANCH%==stable c:\dev\ciuploadtool\ciuploadtool.exe -suffix="%APPVEYOR_REPO_BRANCH%" C:\src\EmulationStation\version.info
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+#matrix:
+#  fast_finish: true
+#  allow_failures:
+#    - prepare_mode: YES
+  
+artifacts:
+- path: '*.zip'
+  name: GitHub
+- path: version.info
+  name: GitHub
+  
+deploy:
+- provider: GitHub
+  tag: continuous-%APPVEYOR_REPO_BRANCH%
+  auth_token:
+    secure: J3UfnZmEGS1jcGONL+6zX34MQQZ0DN4mMeKKdX0olGKnegW8XTthICXDjZKPKGN3
+  force_update: true
